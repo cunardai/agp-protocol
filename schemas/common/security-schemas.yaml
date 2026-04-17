@@ -1,0 +1,24 @@
+components:
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            agp.registry.write: Write registry artifacts
+            agp.registry.read: Read registry artifacts
+            agp.decision.write: Write decision artifacts
+            agp.decision.read: Read decision artifacts
+            agp.execution.write: Write execution artifacts
+            agp.execution.read: Read execution artifacts
+            agp.approval.write: Issue approvals
+            agp.policy.write: Issue policy decisions
+            agp.revocation.write: Issue revocations
+
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+
+    mutualTLS:
+      type: mutualTLS

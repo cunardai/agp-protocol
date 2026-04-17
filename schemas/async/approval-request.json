@@ -1,0 +1,9 @@
+{
+  "decision_ref": "dec_001",
+  "requested_approvers": ["manager_1"],
+  "approval_mode": "single",
+  "requested_scope": ["book_flight", "payment_up_to_800_gbp"],
+  "expires_at": "2026-04-09T10:30:00Z",
+  "callback_url": "https://client.example.com/hooks/approval",
+  "requested_at": "2026-04-09T10:00:00Z"
+}

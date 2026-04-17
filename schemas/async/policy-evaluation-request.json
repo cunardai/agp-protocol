@@ -1,0 +1,7 @@
+{
+  "decision_ref": "dec_001",
+  "context_refs": ["ctx_001"],
+  "evidence_refs": ["evb_001"],
+  "callback_url": "https://client.example.com/hooks/policy",
+  "evaluated_at": "2026-04-09T10:00:00Z"
+}

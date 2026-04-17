@@ -1,0 +1,59 @@
+{
+  "$id": "https://agp.dev/schema/objects/task.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "description": "Root lifecycle object for an AGP-governed agentic workflow. Status transitions are guarded per §9.1.",
+  "$defs": {
+    "taskStatus": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "BOUND",
+        "DELEGATED",
+        "SKILL_BOUND",
+        "COMMERCE_INIT",
+        "ANALYZING",
+        "DECIDED",
+        "POLICY_CHECKED",
+        "APPROVAL_PENDING",
+        "EXECUTING",
+        "COMPLETED",
+        "DENIED",
+        "REVOKED",
+        "QUARANTINED",
+        "FAILED"
+      ]
+    }
+  },
+  "type": "object",
+  "required": ["task_id", "principal_id", "requested_outcome", "risk_tier", "created_at", "status"],
+  "properties": {
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "principal_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "requested_outcome": { "type": "string", "minLength": 1 },
+    "risk_tier": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/riskTier" },
+    "created_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "expires_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "sponsoring_entity": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "status": { "$ref": "#/$defs/taskStatus" },
+    "liability_binding_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "capability_token_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "jurisdictions": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/jurisdiction" },
+      "description": "The regulatory jurisdictions in which this task operates. Determines which PolicySets must be applied during policy evaluation. e.g. ['EU', 'GB'] requires both EU AI Act and UK AI Safety Framework checks where applicable. If omitted, no jurisdiction-specific policy enforcement is assumed."
+    },
+
+    "regulatory_frameworks": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/regulatoryFramework" },
+      "description": "Explicit regulatory frameworks that must be evaluated for this task. When set, the policy evaluation step MUST reference a PolicyDecision backed by a PolicySet covering each declared framework. Takes precedence over framework inference from jurisdictions alone."
+    },
+
+    "governance_requirements": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/governanceRequirements",
+      "description": "Declares which agent governance roles must attest before execution is permitted. See §21."
+    }
+  },
+  "additionalProperties": false
+}

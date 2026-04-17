@@ -1,0 +1,86 @@
+{
+  "$id": "https://agp.dev/schema/objects/decision-record.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DecisionRecord",
+  "type": "object",
+  "required": [
+    "type",
+    "decision_id",
+    "task_id",
+    "agent_id",
+    "action_class",
+    "input_refs",
+    "uncertainty_score",
+    "requires_approval",
+    "created_at"
+  ],
+  "properties": {
+    "type": { "const": "DecisionRecord" },
+    "decision_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "agent_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "skill_refs": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" }
+    },
+    "commerce_session_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "goal_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_class": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write",
+        "publish",
+        "transact",
+        "delete",
+        "admin"
+      ]
+    },
+    "candidate_actions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "selected_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" }
+    },
+    "uncertainty_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "expected_side_effects": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "requires_approval": { "type": "boolean" },
+    "impact_assessment_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ],
+      "description": "Reference to an ImpactAssessment produced by an impact_assessor agent. Required for high and critical risk_tier tasks with transact, delete, or admin action_class. See §22."
+    },
+    "created_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

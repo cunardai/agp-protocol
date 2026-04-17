@@ -1,0 +1,49 @@
+{
+  "name": "@agp-protocol/sdk",
+  "version": "0.5.1",
+  "description": "TypeScript/Node.js SDK for the Agent Governance Protocol",
+  "homepage": "https://agp-protocol.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cunardai/agp"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai",
+    "agents",
+    "governance",
+    "accountability",
+    "compliance",
+    "agp"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "AGP_BASE_URL=${AGP_BASE_URL:-http://localhost:8099} vitest run",
+    "test:watch": "AGP_BASE_URL=${AGP_BASE_URL:-http://localhost:8099} vitest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

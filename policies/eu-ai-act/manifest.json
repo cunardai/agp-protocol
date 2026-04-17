@@ -1,0 +1,33 @@
+{
+  "type": "PolicySet",
+  "name": "EU AI Act 2024 — AGP Policy Pack",
+  "version": "1.0.0",
+  "publisher": "agp-comply",
+  "regulatory_frameworks": ["EU_AI_ACT_2024"],
+  "jurisdictions": ["EU", "EEA"],
+  "ruleset_engine": "opa",
+  "ruleset_engine_version": "0.68.0",
+  "attestation_level": "self_attested",
+  "effective_from": "2025-02-02T00:00:00Z",
+  "description": "Implements EU AI Act (Regulation 2024/1689) obligations for AGP-governed AI agents. Covers prohibited practices (Article 5), high-risk system obligations (Articles 6-27), transparency requirements (Article 50), and GPAI model obligations (Articles 51-56). Register this manifest as a PolicySet in your AGP Registry to attribute PolicyDecisions to specific EU AI Act articles.",
+  "articles_covered": [
+    "Article 5  — Prohibited AI practices",
+    "Article 6  — Classification of high-risk AI systems",
+    "Article 9  — Risk management system",
+    "Article 10 — Data governance",
+    "Article 12 — Record-keeping",
+    "Article 13 — Transparency and information provision",
+    "Article 14 — Human oversight",
+    "Article 17 — Quality management system",
+    "Article 50 — Transparency obligations for certain AI systems",
+    "Annex III  — High-risk AI systems referred to in Article 6(2)"
+  ],
+  "rego_packages": [
+    "eu_ai_act.prohibited",
+    "eu_ai_act.risk_classification",
+    "eu_ai_act.human_oversight",
+    "eu_ai_act.transparency",
+    "eu_ai_act.record_keeping",
+    "eu_ai_act.agp_verdict"
+  ]
+}

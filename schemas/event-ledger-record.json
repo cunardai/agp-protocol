@@ -1,0 +1,63 @@
+{
+  "$id": "https://agp.dev/schema/objects/event-ledger-record.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EventLedgerRecord",
+  "type": "object",
+  "required": [
+    "type",
+    "event_id",
+    "task_id",
+    "timestamp",
+    "agent_id",
+    "principal_id",
+    "outcome"
+  ],
+  "properties": {
+    "type": { "const": "EventLedgerRecord" },
+    "event_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "prev_event_hash": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" },
+        { "type": "null" }
+      ]
+    },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "timestamp": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "agent_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "principal_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "decision_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "delegation_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" }
+    },
+    "tool_action_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "artifact_hashes": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" }
+    },
+    "outcome": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/ledgerOutcome" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

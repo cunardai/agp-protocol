@@ -1,0 +1,45 @@
+{
+  "$id": "https://agp.dev/schema/objects/liability-binding.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LiabilityBinding",
+  "type": "object",
+  "required": [
+    "type",
+    "binding_id",
+    "task_id",
+    "sponsoring_entity",
+    "accountable_owner",
+    "jurisdiction",
+    "risk_tier",
+    "created_at"
+  ],
+  "properties": {
+    "type": { "const": "LiabilityBinding" },
+    "binding_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "sponsoring_entity": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "accountable_owner": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "jurisdiction": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 16
+      }
+    },
+    "risk_tier": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/riskTier" },
+    "escalation_contact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

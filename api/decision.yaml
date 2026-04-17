@@ -1,0 +1,1302 @@
+openapi: 3.1.0
+info:
+  title: AGP Decision API
+  version: 0.5.0-draft
+  summary: Decision pipeline API for AGP
+  description: |
+    Decision API for pre-execution artifacts:
+    contexts, evidence, commerce sessions, decisions,
+    policy evaluations, policy decisions, approval requests, approvals.
+
+    Approval requests are always asynchronous (§7.2).
+    Policy evaluations are async when human review or external systems are required.
+
+servers:
+  - url: https://decision.example.com
+
+security:
+  - oauth2ClientCredentials: [agp.decision.read, agp.decision.write]
+  - mutualTLS: []
+
+tags:
+  - name: Context
+  - name: Evidence
+  - name: Commerce
+  - name: Decisions
+  - name: Policy
+  - name: Approvals
+  - name: Governance
+  - name: Escalations
+  - name: Operations
+
+paths:
+  /agp/contexts:
+    post:
+      tags: [Context]
+      summary: Ingest attested context
+      operationId: createAttestedContext
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestedContext'
+      responses:
+        '201':
+          description: Context recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttestedContext'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/contexts/{contextId}:
+    get:
+      tags: [Context]
+      summary: Get attested context
+      operationId: getAttestedContext
+      parameters:
+        - $ref: '#/components/parameters/ContextId'
+      responses:
+        '200':
+          description: Context retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttestedContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/evidence-bundles:
+    post:
+      tags: [Evidence]
+      summary: Create evidence bundle
+      operationId: createEvidenceBundle
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceBundle'
+      responses:
+        '201':
+          description: Evidence bundle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceBundle'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/evidence-bundles/{bundleId}:
+    get:
+      tags: [Evidence]
+      summary: Get evidence bundle
+      operationId: getEvidenceBundle
+      parameters:
+        - $ref: '#/components/parameters/BundleId'
+      responses:
+        '200':
+          description: Evidence bundle retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceBundle'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/commerce-sessions:
+    post:
+      tags: [Commerce]
+      summary: Create commerce session
+      operationId: createCommerceSession
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommerceSession'
+      responses:
+        '201':
+          description: Commerce session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommerceSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/commerce-sessions/{commerceSessionId}:
+    get:
+      tags: [Commerce]
+      summary: Get commerce session
+      operationId: getCommerceSession
+      parameters:
+        - $ref: '#/components/parameters/CommerceSessionId'
+      responses:
+        '200':
+          description: Commerce session retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommerceSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/decisions:
+    post:
+      tags: [Decisions]
+      summary: Create decision record
+      operationId: createDecisionRecord
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRecord'
+      responses:
+        '201':
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/decisions/{decisionId}:
+    get:
+      tags: [Decisions]
+      summary: Get decision record
+      operationId: getDecisionRecord
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Decision retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/policy-evaluations:
+    post:
+      tags: [Policy]
+      summary: Request policy evaluation
+      description: |
+        Synchronous when the Prefer header is respond-sync and SLA allows.
+        Must be async when human review is required, external compliance systems
+        are queried, or multiple engines must be combined (§7.2).
+      operationId: createPolicyEvaluation
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: Prefer
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [respond-sync, respond-async]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyEvaluationRequest'
+      responses:
+        '201':
+          description: Policy evaluation completed synchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyEvaluationRecord'
+        '202':
+          description: Policy evaluation accepted asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyEvaluationRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/policy-evaluations/{policyEvaluationId}:
+    get:
+      tags: [Policy]
+      summary: Get policy evaluation status and result
+      operationId: getPolicyEvaluation
+      parameters:
+        - $ref: '#/components/parameters/PolicyEvaluationId'
+      responses:
+        '200':
+          description: Policy evaluation record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyEvaluationRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/policy-decisions:
+    post:
+      tags: [Policy]
+      summary: Record policy decision
+      operationId: createPolicyDecision
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyDecision'
+      responses:
+        '201':
+          description: Policy decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDecision'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/policy-decisions/{policyDecisionId}:
+    get:
+      tags: [Policy]
+      summary: Get policy decision
+      operationId: getPolicyDecision
+      parameters:
+        - $ref: '#/components/parameters/PolicyDecisionId'
+      responses:
+        '200':
+          description: Policy decision retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/approval-requests:
+    post:
+      tags: [Approvals]
+      summary: Request approval
+      description: Approval requests are always asynchronous (§7.2). Returns 202 and an AsyncOperation.
+      operationId: createApprovalRequest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequest'
+      responses:
+        '202':
+          description: Approval request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /agp/approval-requests/{approvalRequestId}:
+    get:
+      tags: [Approvals]
+      summary: Get approval request status
+      operationId: getApprovalRequest
+      parameters:
+        - $ref: '#/components/parameters/ApprovalRequestId'
+      responses:
+        '200':
+          description: Approval request record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/approvals:
+    post:
+      tags: [Approvals]
+      summary: Record approval artifact
+      operationId: createApprovalArtifact
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalArtifact'
+      responses:
+        '201':
+          description: Approval artifact created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalArtifact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/approvals/{approvalId}:
+    get:
+      tags: [Approvals]
+      summary: Get approval artifact
+      operationId: getApprovalArtifact
+      parameters:
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200':
+          description: Approval artifact retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalArtifact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/impact-assessments:
+    post:
+      tags: [Governance]
+      summary: Submit impact assessment
+      description: |
+        Records a consequence simulation produced by an impact_assessor agent.
+        Must be submitted before the DecisionRecord is finalised for high/critical
+        risk tasks with transact, delete, or admin action_class. See §22.
+      operationId: createImpactAssessment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpactAssessment'
+      responses:
+        '201':
+          description: Impact assessment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpactAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/impact-assessments/{assessmentId}:
+    get:
+      tags: [Governance]
+      summary: Get impact assessment
+      operationId: getImpactAssessment
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+      responses:
+        '200':
+          description: Impact assessment retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpactAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/escalations:
+    post:
+      tags: [Escalations]
+      summary: Raise escalation notice
+      description: |
+        Any authorized agent may raise an EscalationNotice (the Whistleblower mechanism).
+        The raising agent does not have to be the executing agent.
+        requested_action determines mandatory task state transition:
+          - quarantine -> QUARANTINED (immediate, no human required)
+          - pause_and_review -> APPROVAL_PENDING
+          - escalate_to_human -> APPROVAL_PENDING with mandatory human approver
+        EscalationNotices are permanent audit records even if later dismissed. See §23.
+      operationId: createEscalationNotice
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalationNotice'
+      responses:
+        '201':
+          description: Escalation notice recorded and task transition initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalationNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/escalations/{escalationId}:
+    get:
+      tags: [Escalations]
+      summary: Get escalation notice
+      operationId: getEscalationNotice
+      parameters:
+        - $ref: '#/components/parameters/EscalationId'
+      responses:
+        '200':
+          description: Escalation notice retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalationNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Escalations]
+      summary: Resolve escalation notice
+      description: Populated by the resolving authority after review. Upheld, dismissed, or partially upheld.
+      operationId: resolveEscalationNotice
+      parameters:
+        - $ref: '#/components/parameters/EscalationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalationResolution'
+      responses:
+        '200':
+          description: Escalation resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalationNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /agp/operations/{operationId}:
+    get:
+      tags: [Operations]
+      summary: Get async operation status
+      operationId: getOperation
+      parameters:
+        - $ref: '#/components/parameters/OperationId'
+      responses:
+        '200':
+          description: Operation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            agp.decision.write: Write decision artifacts
+            agp.decision.read: Read decision artifacts
+            agp.approval.write: Issue approvals
+            agp.policy.write: Issue policy decisions
+    mutualTLS:
+      type: mutualTLS
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    ContextId:
+      name: contextId
+      in: path
+      required: true
+      schema: { type: string }
+    BundleId:
+      name: bundleId
+      in: path
+      required: true
+      schema: { type: string }
+    CommerceSessionId:
+      name: commerceSessionId
+      in: path
+      required: true
+      schema: { type: string }
+    DecisionId:
+      name: decisionId
+      in: path
+      required: true
+      schema: { type: string }
+    PolicyEvaluationId:
+      name: policyEvaluationId
+      in: path
+      required: true
+      schema: { type: string }
+    PolicyDecisionId:
+      name: policyDecisionId
+      in: path
+      required: true
+      schema: { type: string }
+    ApprovalRequestId:
+      name: approvalRequestId
+      in: path
+      required: true
+      schema: { type: string }
+    ApprovalId:
+      name: approvalId
+      in: path
+      required: true
+      schema: { type: string }
+    AssessmentId:
+      name: assessmentId
+      in: path
+      required: true
+      schema: { type: string }
+    EscalationId:
+      name: escalationId
+      in: path
+      required: true
+      schema: { type: string }
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed or invalid request (400)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication (401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but not permitted for this operation (403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found (404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Idempotency conflict, state conflict, or revocation conflict (409)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    ErrorCode:
+      type: string
+      description: Standard AGP error codes (§13)
+      enum:
+        - AGP_INVALID_REQUEST
+        - AGP_INVALID_SIGNATURE
+        - AGP_UNAUTHORIZED
+        - AGP_FORBIDDEN
+        - AGP_NOT_FOUND
+        - AGP_IDEMPOTENCY_CONFLICT
+        - AGP_SCOPE_VIOLATION
+        - AGP_TOKEN_EXPIRED
+        - AGP_TOKEN_REVOKED
+        - AGP_DELEGATION_REVOKED
+        - AGP_POLICY_DENIED
+        - AGP_APPROVAL_REQUIRED
+        - AGP_APPROVAL_EXPIRED
+        - AGP_TAINT_BLOCKED
+        - AGP_EVIDENCE_INSUFFICIENT
+        - AGP_COMMERCE_SESSION_INVALID
+        - AGP_PAYMENT_REFERENCE_REQUIRED
+        - AGP_LEDGER_UNAVAILABLE
+        - AGP_OPERATION_FAILED
+        - AGP_OPERATION_CANCELLED
+
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message: { type: string, minLength: 1 }
+        retryable: { type: boolean }
+        details: { type: object }
+      additionalProperties: false
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      additionalProperties: false
+
+    Signature:
+      type: object
+      required: [alg, issuer, issued_at, payload_hash, value]
+      description: Structured cryptographic signature per §5.2
+      properties:
+        alg: { type: string }
+        kid: { type: string, minLength: 1 }
+        issuer: { $ref: '#/components/schemas/Id' }
+        issued_at: { $ref: '#/components/schemas/Timestamp' }
+        payload_hash: { $ref: '#/components/schemas/Hash' }
+        value: { type: string, minLength: 1 }
+      additionalProperties: false
+
+    OperationStatus:
+      type: string
+      enum: [pending, running, awaiting_human, succeeded, failed, cancelled]
+
+    AsyncOperation:
+      type: object
+      required: [operation_id, status, created_at, status_url]
+      properties:
+        operation_id: { type: string }
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status_url:
+          type: string
+          format: uri
+        result_url:
+          type: string
+          format: uri
+        callback_url:
+          type: string
+          format: uri
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      additionalProperties: false
+
+    Id:
+      type: string
+      minLength: 1
+      maxLength: 256
+
+    Timestamp:
+      type: string
+      format: date-time
+
+    Hash:
+      type: string
+      pattern: '^[A-Za-z0-9_-]+:.+$'
+
+    AttestedContext:
+      type: object
+      required: [type, context_id, task_id, source_id, source_type, trust_class, instruction_eligible, taint_labels, retrieved_at, hash]
+      properties:
+        type: { const: AttestedContext }
+        context_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        source_id:
+          $ref: '#/components/schemas/Id'
+        source_type:
+          type: string
+          enum: [trusted_policy, user_input, tool_result, agent_message, retrieved_content, merchant_response, payment_response, evidence_only]
+        trust_class:
+          type: string
+          enum: [trusted_policy, user_intent, tool_result, agent_message, retrieved_content, evidence_only, untrusted_content]
+        instruction_eligible:
+          type: boolean
+        taint_labels:
+          type: array
+          items: { type: string }
+        retrieved_at:
+          $ref: '#/components/schemas/Timestamp'
+        hash:
+          $ref: '#/components/schemas/Hash'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    EvidenceBundle:
+      type: object
+      required: [type, bundle_id, task_id, claims, created_at]
+      properties:
+        type: { const: EvidenceBundle }
+        bundle_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        claims:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [claim_id, claim_text, source_refs, verification_status, corroboration_level, fresh_until]
+            properties:
+              claim_id:
+                $ref: '#/components/schemas/Id'
+              claim_text:
+                type: string
+              source_refs:
+                type: array
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/Id'
+              verification_status:
+                type: string
+                enum: [unverified, corroborated, verified, disputed]
+              corroboration_level:
+                type: integer
+                minimum: 0
+              fresh_until:
+                $ref: '#/components/schemas/Timestamp'
+            additionalProperties: false
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    CommerceSession:
+      type: object
+      required: [type, commerce_session_id, task_id, ucp_session_ref, merchant_id, cart_hash, status, capability_token_ref, liability_binding_ref, created_at]
+      properties:
+        type: { const: CommerceSession }
+        commerce_session_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        ucp_session_ref:
+          type: string
+        merchant_id:
+          $ref: '#/components/schemas/Id'
+        cart_hash:
+          $ref: '#/components/schemas/Hash'
+        status:
+          type: string
+          enum: [initialized, discovery, cart_active, checkout_pending, order_submitted, fulfilled, cancelled, failed]
+        capability_token_ref:
+          $ref: '#/components/schemas/Id'
+        liability_binding_ref:
+          $ref: '#/components/schemas/Id'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    DecisionRecord:
+      type: object
+      required: [type, decision_id, task_id, agent_id, action_class, input_refs, uncertainty_score, requires_approval, created_at]
+      properties:
+        type: { const: DecisionRecord }
+        decision_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        agent_id:
+          $ref: '#/components/schemas/Id'
+        skill_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        commerce_session_ref:
+          type: ['string', 'null']
+        goal_ref:
+          type: string
+        action_class:
+          type: string
+          enum: [read, write, publish, transact, delete, admin]
+        candidate_actions:
+          type: array
+          items: { type: string }
+        selected_action:
+          type: string
+        input_refs:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Id'
+        uncertainty_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        expected_side_effects:
+          type: array
+          items: { type: string }
+        requires_approval:
+          type: boolean
+        impact_assessment_ref:
+          type: ['string', 'null']
+          description: Reference to an ImpactAssessment. Required for high/critical risk tasks with transact, delete, or admin action_class. See §22.
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    PolicyEvaluationRequest:
+      type: object
+      required: [decision_ref, evaluated_at]
+      properties:
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        context_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        evidence_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        callback_url:
+          type: string
+          format: uri
+        evaluated_at:
+          $ref: '#/components/schemas/Timestamp'
+      additionalProperties: false
+
+    PolicyEvaluationRecord:
+      type: object
+      required: [evaluation_id, decision_ref, status, requested_at]
+      description: |
+        Resource representation of a policy evaluation request.
+        status reflects the OperationStatus. When succeeded, policy_decision_ref
+        is populated. result_url points to the PolicyDecision resource.
+      properties:
+        evaluation_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        requested_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        context_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        evidence_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        policy_decision_ref:
+          type: ['string', 'null']
+          description: Set when status is succeeded
+        operation_id:
+          type: ['string', 'null']
+          description: AsyncOperation ID for polling if async
+        callback_url:
+          type: string
+          format: uri
+      additionalProperties: false
+
+    PolicyDecision:
+      type: object
+      required: [type, policy_decision_id, decision_ref, result, matched_rules, obligations, evaluated_at]
+      properties:
+        type: { const: PolicyDecision }
+        policy_decision_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        result:
+          type: string
+          enum: [allow, deny, require_approval, require_stronger_auth, quarantine]
+        matched_rules:
+          type: array
+          items: { type: string }
+        obligations:
+          type: array
+          items: { type: string }
+        evaluated_at:
+          $ref: '#/components/schemas/Timestamp'
+        ethical_framework:
+          oneOf:
+            - $ref: '#/components/schemas/EthicalFramework'
+            - type: 'null'
+          description: The ethical framework applied by the policy engine. Required when result is deny or quarantine for high/critical risk decisions. See §24.
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    ApprovalRequest:
+      type: object
+      required: [request_id, decision_ref, requested_at]
+      properties:
+        request_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        requested_approvers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        approval_mode:
+          type: string
+          enum: [single, dual, multi]
+        requested_scope:
+          type: array
+          items:
+            type: string
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        callback_url:
+          type: string
+          format: uri
+        requested_at:
+          $ref: '#/components/schemas/Timestamp'
+      additionalProperties: false
+
+    ApprovalRequestRecord:
+      type: object
+      required: [request_id, decision_ref, status, requested_at]
+      description: |
+        Resource representation of an approval request with its current status.
+        When status is succeeded, approval_ref is populated.
+      properties:
+        request_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        requested_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        requested_approvers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        approval_mode:
+          type: string
+          enum: [single, dual, multi]
+        requested_scope:
+          type: array
+          items: { type: string }
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        approval_ref:
+          type: ['string', 'null']
+          description: Set when status is succeeded
+        operation_id:
+          type: ['string', 'null']
+        callback_url:
+          type: string
+          format: uri
+      additionalProperties: false
+
+    AgentRole:
+      type: string
+      description: Governance role of an agent in the multi-agent governance model (§21)
+      enum: [executive, compliance_monitor, impact_assessor]
+
+    EthicalFramework:
+      type: object
+      required: [primary]
+      description: Declares the ethical framework applied by a skill or policy engine. See §24.
+      properties:
+        primary:
+          type: string
+          enum: [veil_of_ignorance, pareto_optimal, utilitarian, rights_based, value_pluralist, custom]
+        secondary:
+          type: array
+          items:
+            type: string
+            enum: [veil_of_ignorance, pareto_optimal, utilitarian, rights_based, value_pluralist, custom]
+        prohibitions:
+          type: array
+          items: { type: string, minLength: 1 }
+        policy_ref:
+          type: ['string', 'null']
+      additionalProperties: false
+
+    ImpactHorizon:
+      type: string
+      enum: [immediate, short_term, medium_term, long_term]
+
+    ImpactSeverity:
+      type: string
+      enum: [negligible, low, medium, high, critical]
+
+    ImpactAssessment:
+      type: object
+      required: [type, assessment_id, task_id, decision_ref, agent_id, time_horizons, recommendation, assessed_at]
+      description: Pre-execution consequence simulation produced by an impact_assessor agent. See §22.
+      properties:
+        type: { const: ImpactAssessment }
+        assessment_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        agent_id:
+          $ref: '#/components/schemas/Id'
+        time_horizons:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [horizon, consequences, severity, reversible]
+            properties:
+              horizon:
+                $ref: '#/components/schemas/ImpactHorizon'
+              consequences:
+                type: array
+                minItems: 1
+                items: { type: string }
+              severity:
+                $ref: '#/components/schemas/ImpactSeverity'
+              reversible:
+                type: boolean
+            additionalProperties: false
+        stakeholders_affected:
+          type: array
+          items:
+            type: object
+            required: [stakeholder_class, impact_direction, magnitude]
+            properties:
+              stakeholder_class: { type: string }
+              impact_direction:
+                type: string
+                enum: [positive, negative, neutral, mixed]
+              magnitude:
+                $ref: '#/components/schemas/ImpactSeverity'
+              notes: { type: string }
+            additionalProperties: false
+        pareto_assessment:
+          type: object
+          required: [improves_without_harm]
+          properties:
+            improves_without_harm: { type: boolean }
+            harmed_parties:
+              type: array
+              items: { type: string }
+            mitigation_available: { type: boolean }
+            mitigation_notes: { type: string }
+          additionalProperties: false
+        ethical_framework_applied:
+          $ref: '#/components/schemas/EthicalFramework'
+        recommendation:
+          type: string
+          enum: [proceed, proceed_with_caution, require_human_review, block]
+        recommendation_rationale: { type: string }
+        assessed_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    EscalationNotice:
+      type: object
+      required: [type, escalation_id, task_id, raising_agent_id, concern_type, description, requested_action, raised_at]
+      description: Agent-initiated ethical concern escalation (Whistleblower mechanism). See §23.
+      properties:
+        type: { const: EscalationNotice }
+        escalation_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        raising_agent_id:
+          $ref: '#/components/schemas/Id'
+        raising_agent_role:
+          $ref: '#/components/schemas/AgentRole'
+        concern_type:
+          type: string
+          enum: [ethical_violation, scope_creep, taint_detected, policy_conflict, unresolvable_conflict, data_integrity_failure]
+        description: { type: string, minLength: 1 }
+        evidence_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        requested_action:
+          type: string
+          enum: [quarantine, pause_and_review, escalate_to_human]
+        resolution:
+          $ref: '#/components/schemas/EscalationResolution'
+        raised_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    EscalationResolution:
+      type: object
+      required: [resolved_by, outcome, resolved_at]
+      properties:
+        resolved_by:
+          $ref: '#/components/schemas/Id'
+        outcome:
+          type: string
+          enum: [upheld, dismissed, partially_upheld]
+        notes: { type: string }
+        resolved_at:
+          $ref: '#/components/schemas/Timestamp'
+      additionalProperties: false
+
+    ApprovalArtifact:
+      type: object
+      required: [type, approval_id, task_id, decision_ref, approved_by, approval_mode, approved_scope, expires_at]
+      properties:
+        type: { const: ApprovalArtifact }
+        approval_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        approved_by:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Id'
+        approval_mode:
+          type: string
+          enum: [single, dual, multi]
+        approved_scope:
+          type: array
+          minItems: 1
+          items: { type: string }
+        reason:
+          type: string
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false

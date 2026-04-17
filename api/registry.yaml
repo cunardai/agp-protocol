@@ -1,0 +1,1141 @@
+openapi: 3.1.0
+info:
+  title: AGP Registry API
+  version: 0.5.0-draft
+  summary: Registry and authority artifacts for AGP
+  description: |
+    Registry API for durable governance artifacts:
+    tasks, liability bindings, capability tokens, skill manifests,
+    delegation chains, and revocations.
+
+    Authority: registry_issuer, capability_issuer, skill_publisher, revocation_issuer.
+    All writes are idempotent via Idempotency-Key. No fail-open behaviour.
+
+servers:
+  - url: https://registry.example.com
+
+security:
+  - oauth2ClientCredentials: [agp.registry.read, agp.registry.write]
+  - mutualTLS: []
+
+tags:
+  - name: Tasks
+  - name: Liability
+  - name: Capabilities
+  - name: Delegations
+  - name: Skills
+  - name: Revocations
+  - name: PolicySets
+
+paths:
+  /agp/tasks:
+    post:
+      tags: [Tasks]
+      summary: Create task
+      operationId: createTask
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      tags: [Tasks]
+      summary: List tasks
+      operationId: listTasks
+      parameters:
+        - name: principal_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: Get task
+      operationId: getTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Tasks]
+      summary: Transition task status
+      description: |
+        Advance a task through its lifecycle state machine (§9.1).
+        Each transition requires the artifact that guards it to be referenced.
+        Invalid transitions are rejected with 409.
+      operationId: transitionTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskTransitionRequest'
+      responses:
+        '200':
+          description: Task status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /agp/liability-bindings:
+    post:
+      tags: [Liability]
+      summary: Create liability binding
+      operationId: createLiabilityBinding
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiabilityBinding'
+      responses:
+        '201':
+          description: Liability binding created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiabilityBinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /agp/liability-bindings/{bindingId}:
+    get:
+      tags: [Liability]
+      summary: Get liability binding
+      operationId: getLiabilityBinding
+      parameters:
+        - $ref: '#/components/parameters/BindingId'
+      responses:
+        '200':
+          description: Liability binding retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiabilityBinding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/capabilities:
+    post:
+      tags: [Capabilities]
+      summary: Issue capability token
+      operationId: issueCapabilityToken
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapabilityToken'
+      responses:
+        '201':
+          description: Capability token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilityToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/capabilities/{capabilityId}:
+    get:
+      tags: [Capabilities]
+      summary: Get capability token
+      operationId: getCapabilityToken
+      parameters:
+        - $ref: '#/components/parameters/CapabilityId'
+      responses:
+        '200':
+          description: Capability token retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilityToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/delegations:
+    post:
+      tags: [Delegations]
+      summary: Create delegation chain entry
+      description: |
+        Records a scoped sub-delegation from delegator_agent to delegate_agent.
+        Rejected with 409 if the delegation violates scope or max_hops_remaining constraints.
+      operationId: createDelegation
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DelegationChain'
+      responses:
+        '201':
+          description: Delegation recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelegationChain'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /agp/delegations/{delegationId}:
+    get:
+      tags: [Delegations]
+      summary: Get delegation chain entry
+      operationId: getDelegation
+      parameters:
+        - $ref: '#/components/parameters/DelegationId'
+      responses:
+        '200':
+          description: Delegation chain entry retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelegationChain'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/skills:
+    post:
+      tags: [Skills]
+      summary: Register skill manifest
+      operationId: registerSkillManifest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillManifest'
+      responses:
+        '201':
+          description: Skill manifest registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillManifest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    get:
+      tags: [Skills]
+      summary: List skill manifests
+      operationId: listSkillManifests
+      parameters:
+        - name: publisher
+          in: query
+          schema: { type: string }
+        - name: attestation_level
+          in: query
+          schema:
+            type: string
+            enum: [unverified, self_attested, verified]
+        - name: risk_class
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Skill manifest list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillManifestList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/skills/{skillId}:
+    get:
+      tags: [Skills]
+      summary: Get skill manifest
+      operationId: getSkillManifest
+      parameters:
+        - $ref: '#/components/parameters/SkillId'
+      responses:
+        '200':
+          description: Skill manifest retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillManifest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/revocations:
+    post:
+      tags: [Revocations]
+      summary: Create revocation notice
+      operationId: createRevocationNotice
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevocationNotice'
+      responses:
+        '201':
+          description: Revocation recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevocationNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/revocations/{revocationId}:
+    get:
+      tags: [Revocations]
+      summary: Get revocation notice
+      operationId: getRevocationNotice
+      parameters:
+        - $ref: '#/components/parameters/RevocationId'
+      responses:
+        '200':
+          description: Revocation notice retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevocationNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/policy-sets:
+    post:
+      tags: [PolicySets]
+      summary: Register a policy set
+      description: |
+        Registers a versioned policy ruleset in the AGP Registry.
+        Once registered, PolicyDecisions may reference this PolicySet via
+        policy_set_ref to attribute verdicts to specific rules and frameworks.
+        The ruleset content (e.g. OPA bundle) is not stored here — only its
+        hash and provenance metadata. See §25.
+      operationId: registerPolicySet
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicySet'
+      responses:
+        '201':
+          description: PolicySet registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicySet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      tags: [PolicySets]
+      summary: List policy sets
+      operationId: listPolicySets
+      parameters:
+        - name: regulatory_framework
+          in: query
+          schema:
+            type: string
+          description: Filter by regulatory framework (e.g. EU_AI_ACT_2024)
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+          description: Filter by jurisdiction (e.g. EU, GB)
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, deprecated, revoked]
+        - name: attestation_level
+          in: query
+          schema:
+            type: string
+            enum: [unverified, self_attested, verified]
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: PolicySet list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicySetList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/policy-sets/{policySetId}:
+    get:
+      tags: [PolicySets]
+      summary: Get policy set
+      operationId: getPolicySet
+      parameters:
+        - name: policySetId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: PolicySet retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicySet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [PolicySets]
+      summary: Update policy set status
+      description: |
+        Transition a PolicySet to deprecated or revoked.
+        A revoked PolicySet cannot be referenced in new PolicyDecisions.
+        Active→deprecated→revoked only; transitions cannot be reversed.
+      operationId: updatePolicySetStatus
+      parameters:
+        - name: policySetId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [deprecated, revoked]
+                reason:
+                  type: string
+              additionalProperties: false
+      responses:
+        '200':
+          description: PolicySet status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicySet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            agp.registry.write: Write registry artifacts
+            agp.registry.read: Read registry artifacts
+            agp.revocation.write: Issue revocations
+    mutualTLS:
+      type: mutualTLS
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema: { type: string }
+    BindingId:
+      name: bindingId
+      in: path
+      required: true
+      schema: { type: string }
+    CapabilityId:
+      name: capabilityId
+      in: path
+      required: true
+      schema: { type: string }
+    DelegationId:
+      name: delegationId
+      in: path
+      required: true
+      schema: { type: string }
+    SkillId:
+      name: skillId
+      in: path
+      required: true
+      schema: { type: string }
+    RevocationId:
+      name: revocationId
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed or invalid request (400)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication (401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but not permitted for this operation (403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found (404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Idempotency conflict, state conflict, or revocation conflict (409)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Semantically invalid but well-formed request — invalid state transition (422)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    ErrorCode:
+      type: string
+      description: Standard AGP error codes (§13)
+      enum:
+        - AGP_INVALID_REQUEST
+        - AGP_INVALID_SIGNATURE
+        - AGP_UNAUTHORIZED
+        - AGP_FORBIDDEN
+        - AGP_NOT_FOUND
+        - AGP_IDEMPOTENCY_CONFLICT
+        - AGP_SCOPE_VIOLATION
+        - AGP_TOKEN_EXPIRED
+        - AGP_TOKEN_REVOKED
+        - AGP_DELEGATION_REVOKED
+        - AGP_POLICY_DENIED
+        - AGP_APPROVAL_REQUIRED
+        - AGP_APPROVAL_EXPIRED
+        - AGP_TAINT_BLOCKED
+        - AGP_EVIDENCE_INSUFFICIENT
+        - AGP_COMMERCE_SESSION_INVALID
+        - AGP_PAYMENT_REFERENCE_REQUIRED
+        - AGP_LEDGER_UNAVAILABLE
+        - AGP_OPERATION_FAILED
+        - AGP_OPERATION_CANCELLED
+
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message: { type: string, minLength: 1 }
+        retryable: { type: boolean }
+        details: { type: object }
+      additionalProperties: false
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      additionalProperties: false
+
+    Signature:
+      type: object
+      required: [alg, issuer, issued_at, payload_hash, value]
+      description: Structured cryptographic signature per §5.2
+      properties:
+        alg: { type: string }
+        kid: { type: string, minLength: 1 }
+        issuer: { $ref: '#/components/schemas/Id' }
+        issued_at: { $ref: '#/components/schemas/Timestamp' }
+        payload_hash: { $ref: '#/components/schemas/Hash' }
+        value: { type: string, minLength: 1 }
+      additionalProperties: false
+
+    Id:
+      type: string
+      minLength: 1
+      maxLength: 256
+
+    Timestamp:
+      type: string
+      format: date-time
+
+    Hash:
+      type: string
+      pattern: '^[A-Za-z0-9_-]+:.+$'
+
+    CurrencyAmount:
+      type: object
+      required: [currency, amount]
+      properties:
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        amount:
+          type: number
+          minimum: 0
+      additionalProperties: false
+
+    GovernanceRequirements:
+      type: object
+      required: [required_roles]
+      description: Declares which agent governance roles must attest before execution is permitted for this task. See §21.
+      properties:
+        required_roles:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [executive, compliance_monitor, impact_assessor]
+        quorum:
+          type: integer
+          minimum: 1
+          description: Minimum number of distinct required roles that must provide a cleared verdict. Defaults to all declared roles.
+      additionalProperties: false
+
+    PageInfo:
+      type: object
+      properties:
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+      additionalProperties: false
+
+    TaskStatus:
+      type: string
+      enum:
+        - CREATED
+        - BOUND
+        - DELEGATED
+        - SKILL_BOUND
+        - COMMERCE_INIT
+        - ANALYZING
+        - DECIDED
+        - POLICY_CHECKED
+        - APPROVAL_PENDING
+        - EXECUTING
+        - COMPLETED
+        - DENIED
+        - REVOKED
+        - QUARANTINED
+        - FAILED
+
+    TaskCreateRequest:
+      type: object
+      required: [principal_id, requested_outcome, risk_tier, created_at]
+      properties:
+        principal_id:
+          $ref: '#/components/schemas/Id'
+        requested_outcome:
+          type: string
+          minLength: 1
+        risk_tier:
+          type: string
+          enum: [low, medium, high, critical]
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        sponsoring_entity:
+          $ref: '#/components/schemas/Id'
+      additionalProperties: false
+
+    TaskTransitionRequest:
+      type: object
+      required: [status]
+      description: |
+        Requests a task state transition. The transition_guard_ref must reference
+        the artifact that authorises the transition per §9.1 guard rules.
+      properties:
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        transition_guard_ref:
+          $ref: '#/components/schemas/Id'
+        reason:
+          type: string
+          minLength: 1
+      additionalProperties: false
+
+    Task:
+      type: object
+      required: [task_id, principal_id, requested_outcome, risk_tier, created_at, status]
+      properties:
+        task_id:
+          $ref: '#/components/schemas/Id'
+        principal_id:
+          $ref: '#/components/schemas/Id'
+        requested_outcome:
+          type: string
+        risk_tier:
+          type: string
+          enum: [low, medium, high, critical]
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        sponsoring_entity:
+          $ref: '#/components/schemas/Id'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        liability_binding_ref:
+          $ref: '#/components/schemas/Id'
+        capability_token_ref:
+          $ref: '#/components/schemas/Id'
+        governance_requirements:
+          $ref: '#/components/schemas/GovernanceRequirements'
+      additionalProperties: false
+
+    TaskList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      additionalProperties: false
+
+    LiabilityBinding:
+      type: object
+      required: [type, binding_id, task_id, sponsoring_entity, accountable_owner, jurisdiction, risk_tier, created_at]
+      properties:
+        type: { const: LiabilityBinding }
+        binding_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        sponsoring_entity:
+          $ref: '#/components/schemas/Id'
+        accountable_owner:
+          $ref: '#/components/schemas/Id'
+        jurisdiction:
+          type: array
+          minItems: 1
+          items: { type: string }
+        risk_tier:
+          type: string
+          enum: [low, medium, high, critical]
+        escalation_contact:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    CapabilityToken:
+      type: object
+      required: [type, capability_id, subject_agent, issuer, principal_id, permitted_actions, constraints, expires_at, revocation_id]
+      properties:
+        type: { const: CapabilityToken }
+        capability_id:
+          $ref: '#/components/schemas/Id'
+        subject_agent:
+          $ref: '#/components/schemas/Id'
+        issuer:
+          $ref: '#/components/schemas/Id'
+        principal_id:
+          $ref: '#/components/schemas/Id'
+        permitted_actions:
+          type: array
+          minItems: 1
+          items: { type: string }
+        tool_scopes:
+          type: array
+          items: { type: string }
+        data_scopes:
+          type: array
+          items: { type: string }
+        constraints:
+          type: object
+          properties:
+            spend_limit:
+              $ref: '#/components/schemas/CurrencyAmount'
+            max_delegation_depth:
+              type: integer
+              minimum: 0
+            jurisdictions:
+              type: array
+              items: { type: string }
+          additionalProperties: false
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        revocation_id:
+          $ref: '#/components/schemas/Id'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    DelegationChain:
+      type: object
+      required: [type, delegation_id, root_principal, delegator_agent, delegate_agent, authority_scope, constraints, accepted_at, expires_at, signature_chain]
+      properties:
+        type: { const: DelegationChain }
+        delegation_id:
+          $ref: '#/components/schemas/Id'
+        parent_delegation_id:
+          type: ['string', 'null']
+        root_principal:
+          $ref: '#/components/schemas/Id'
+        delegator_agent:
+          $ref: '#/components/schemas/Id'
+        delegate_agent:
+          $ref: '#/components/schemas/Id'
+        authority_scope:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+        constraints:
+          type: object
+          properties:
+            spend_limit:
+              $ref: '#/components/schemas/CurrencyAmount'
+            max_hops_remaining:
+              type: integer
+              minimum: 0
+          additionalProperties: false
+        accepted_at:
+          $ref: '#/components/schemas/Timestamp'
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature_chain:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+      additionalProperties: false
+
+    SkillManifest:
+      type: object
+      required: [type, skill_id, name, version, publisher, supported_protocols, skill_class, risk_class, instruction_hash, attestation_level, created_at]
+      properties:
+        type: { const: SkillManifest }
+        skill_id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        version:
+          type: string
+        publisher:
+          $ref: '#/components/schemas/Id'
+        supported_protocols:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [AGP, A2A, MCP, UCP, AP2]
+        skill_class:
+          type: string
+          enum: [protocol_adapter, domain_workflow, policy_helper, retrieval_helper, execution_helper]
+        risk_class:
+          type: string
+          enum: [low, medium, high, critical]
+        instruction_hash:
+          $ref: '#/components/schemas/Hash'
+        required_tools:
+          type: array
+          items: { type: string }
+        required_approvals:
+          type: array
+          items: { type: string }
+        attestation_level:
+          type: string
+          enum: [unverified, self_attested, verified]
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    SkillManifestList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillManifest'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      additionalProperties: false
+
+    PolicySet:
+      type: object
+      required: [type, policy_set_id, name, version, publisher, regulatory_frameworks, jurisdictions, ruleset_hash, ruleset_engine, attestation_level, status, effective_from, created_at]
+      description: A registered, versioned policy ruleset. See §25.
+      properties:
+        type: { const: PolicySet }
+        policy_set_id:
+          $ref: '#/components/schemas/Id'
+        name: { type: string, minLength: 1 }
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        publisher:
+          $ref: '#/components/schemas/Id'
+        regulatory_frameworks:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [EU_AI_ACT_2024, EU_GDPR, EU_DSA, NIST_AI_RMF_1_0, NIST_CSF_2_0, UK_AI_SAFETY_FRAMEWORK, UK_GDPR, MAS_FEAT, ISO_42001, ISO_27001, SOC2_TYPE2, HIPAA, CCPA, CUSTOM]
+        jurisdictions:
+          type: array
+          minItems: 1
+          items: { type: string }
+        ruleset_hash:
+          $ref: '#/components/schemas/Hash'
+        ruleset_engine:
+          type: string
+          enum: [opa, cedar, casbin, custom]
+        ruleset_engine_version: { type: string }
+        ruleset_uri:
+          type: string
+          format: uri
+        attestation_level:
+          type: string
+          enum: [unverified, self_attested, verified]
+        certifying_body:
+          oneOf:
+            - $ref: '#/components/schemas/Id'
+            - type: 'null'
+        status:
+          type: string
+          enum: [active, deprecated, revoked]
+        effective_from:
+          $ref: '#/components/schemas/Timestamp'
+        expires_at:
+          oneOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+        supersedes:
+          oneOf:
+            - $ref: '#/components/schemas/Id'
+            - type: 'null'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    PolicySetList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicySet'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      additionalProperties: false
+
+    RevocationNotice:
+      type: object
+      required: [type, revocation_id, issuer, target_type, target_id, reason, effective_at]
+      properties:
+        type: { const: RevocationNotice }
+        revocation_id:
+          $ref: '#/components/schemas/Id'
+        issuer:
+          $ref: '#/components/schemas/Id'
+        target_type:
+          type: string
+          enum: [CapabilityToken, DelegationChain, SkillManifest, CommerceSession]
+        target_id:
+          $ref: '#/components/schemas/Id'
+        reason:
+          type: string
+        effective_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false

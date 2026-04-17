@@ -1,0 +1,50 @@
+{
+  "$id": "https://agp.dev/schema/common/error.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Error",
+  "description": "Standard AGP error envelope with enforced error code enum per §13.",
+  "$defs": {
+    "errorCode": {
+      "type": "string",
+      "enum": [
+        "AGP_INVALID_REQUEST",
+        "AGP_INVALID_SIGNATURE",
+        "AGP_UNAUTHORIZED",
+        "AGP_FORBIDDEN",
+        "AGP_NOT_FOUND",
+        "AGP_IDEMPOTENCY_CONFLICT",
+        "AGP_SCOPE_VIOLATION",
+        "AGP_TOKEN_EXPIRED",
+        "AGP_TOKEN_REVOKED",
+        "AGP_DELEGATION_REVOKED",
+        "AGP_POLICY_DENIED",
+        "AGP_APPROVAL_REQUIRED",
+        "AGP_APPROVAL_EXPIRED",
+        "AGP_TAINT_BLOCKED",
+        "AGP_EVIDENCE_INSUFFICIENT",
+        "AGP_COMMERCE_SESSION_INVALID",
+        "AGP_PAYMENT_REFERENCE_REQUIRED",
+        "AGP_LEDGER_UNAVAILABLE",
+        "AGP_OPERATION_FAILED",
+        "AGP_OPERATION_CANCELLED"
+      ]
+    },
+    "errorDetail": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "$ref": "#/$defs/errorCode" },
+        "message": { "type": "string", "minLength": 1 },
+        "retryable": { "type": "boolean" },
+        "details": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["error"],
+  "properties": {
+    "error": { "$ref": "#/$defs/errorDetail" }
+  },
+  "additionalProperties": false
+}

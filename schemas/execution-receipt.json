@@ -1,0 +1,34 @@
+{
+  "$id": "https://agp.dev/schema/objects/execution-receipt.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExecutionReceipt",
+  "description": "Durable proof that an action was executed. MUST be signed by the execution_gateway per §5.1.",
+  "type": "object",
+  "required": ["type", "receipt_id", "action_ref", "task_id", "executed_at", "executor_id", "outcome"],
+  "properties": {
+    "type": { "const": "ExecutionReceipt" },
+    "receipt_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "action_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "executed_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "executor_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "outcome": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/executionOutcome" },
+    "result_hash": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" },
+        { "type": "null" }
+      ]
+    },
+    "external_ref": {
+      "type": ["string", "null"],
+      "description": "External system reference (e.g. order ID, transaction ID)"
+    },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

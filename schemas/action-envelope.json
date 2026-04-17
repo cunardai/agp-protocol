@@ -1,0 +1,66 @@
+{
+  "$id": "https://agp.dev/schema/objects/action-envelope.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActionEnvelope",
+  "type": "object",
+  "required": [
+    "type",
+    "action_id",
+    "task_id",
+    "agent_id",
+    "tool_id",
+    "operation",
+    "capability_token_ref",
+    "decision_ref",
+    "policy_decision_ref",
+    "created_at"
+  ],
+  "properties": {
+    "type": { "const": "ActionEnvelope" },
+    "action_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "agent_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "tool_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "operation": { "type": "string", "minLength": 1 },
+    "parameters_hash": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" },
+        { "type": "null" }
+      ]
+    },
+    "allowed_parameter_ranges": {
+      "type": "object"
+    },
+    "capability_token_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "decision_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "policy_decision_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "approval_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "commerce_session_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ]
+    },
+    "payment_ref": {
+      "type": ["string", "null"]
+    },
+    "created_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "governance_attestations": {
+      "type": "array",
+      "description": "Attestations from governance agents (executive, compliance_monitor, impact_assessor). All roles declared in task.governance_requirements must be present with cleared verdict before execution. See §21.",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/governanceAttestation" }
+    },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

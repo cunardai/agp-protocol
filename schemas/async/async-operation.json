@@ -1,0 +1,9 @@
+{
+  "operation_id": "op_001",
+  "status": "awaiting_human",
+  "created_at": "2026-04-09T10:00:00Z",
+  "updated_at": "2026-04-09T10:02:00Z",
+  "status_url": "https://decision.example.com/agp/operations/op_001",
+  "result_url": null,
+  "callback_url": "https://client.example.com/hooks/approval"
+}

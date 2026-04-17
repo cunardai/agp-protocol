@@ -1,0 +1,49 @@
+{
+  "$id": "https://agp.dev/schema/objects/commerce-session.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CommerceSession",
+  "type": "object",
+  "required": [
+    "type",
+    "commerce_session_id",
+    "task_id",
+    "ucp_session_ref",
+    "merchant_id",
+    "cart_hash",
+    "status",
+    "capability_token_ref",
+    "liability_binding_ref",
+    "created_at"
+  ],
+  "properties": {
+    "type": { "const": "CommerceSession" },
+    "commerce_session_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "ucp_session_ref": { "type": "string", "minLength": 1 },
+    "merchant_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "cart_hash": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "initialized",
+        "discovery",
+        "cart_active",
+        "checkout_pending",
+        "order_submitted",
+        "fulfilled",
+        "cancelled",
+        "failed"
+      ]
+    },
+    "capability_token_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "liability_binding_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "created_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

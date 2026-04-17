@@ -1,0 +1,133 @@
+{
+  "$id": "https://agp.dev/schema/objects/policy-set.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicySet",
+  "description": "A registered, versioned, and auditable policy ruleset. PolicySets are first-class Registry objects that attribute PolicyDecision verdicts to specific regulatory frameworks and rule versions. The ruleset content (e.g. OPA .rego files) lives outside AGP; the PolicySet record provides the immutable fingerprint, provenance, and lifecycle metadata needed to audit which rules governed any given decision. See §25.",
+  "type": "object",
+  "required": [
+    "type",
+    "policy_set_id",
+    "name",
+    "version",
+    "publisher",
+    "regulatory_frameworks",
+    "jurisdictions",
+    "ruleset_hash",
+    "ruleset_engine",
+    "attestation_level",
+    "status",
+    "effective_from",
+    "created_at"
+  ],
+  "properties": {
+    "type": { "const": "PolicySet" },
+
+    "policy_set_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "Stable unique identifier for this PolicySet. Immutable after creation."
+    },
+
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name, e.g. 'EU AI Act 2024 — High-Risk AI Systems'."
+    },
+
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this ruleset. Increment the minor version for non-breaking rule additions; major version for breaking changes to verdict logic."
+    },
+
+    "publisher": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "Agent or organisation that published and is responsible for maintaining this PolicySet."
+    },
+
+    "regulatory_frameworks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/regulatoryFramework" },
+      "description": "The regulatory frameworks this PolicySet implements. A single PolicySet may implement multiple frameworks (e.g. EU_AI_ACT_2024 + EU_GDPR)."
+    },
+
+    "jurisdictions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/jurisdiction" },
+      "description": "Jurisdictions in which this PolicySet applies. Tasks whose jurisdictions intersect this list must use this PolicySet (or a compatible one) when compliance with the declared regulatory_frameworks is required."
+    },
+
+    "ruleset_hash": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash",
+      "description": "Content hash of the policy ruleset artifact (e.g. sha256: of the OPA bundle .tar.gz). Allows any party to verify that the rules that produced a historical PolicyDecision have not been modified."
+    },
+
+    "ruleset_engine": {
+      "type": "string",
+      "enum": ["opa", "cedar", "casbin", "custom"],
+      "description": "The policy engine this ruleset targets. opa: Open Policy Agent (Rego); cedar: AWS Cedar; casbin: Casbin; custom: implementation-specific engine declared in ruleset_engine_ref."
+    },
+
+    "ruleset_engine_version": {
+      "type": "string",
+      "description": "The minimum engine version required to evaluate this ruleset, e.g. '0.68.0' for OPA."
+    },
+
+    "ruleset_uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional URI where the ruleset artifact can be fetched. Must match ruleset_hash when fetched."
+    },
+
+    "attestation_level": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/attestationLevel",
+      "description": "unverified: self-published, no third-party review. self_attested: publisher claims compliance but no independent audit. verified: independently audited by a recognised body (required for AGP Compliance Certification)."
+    },
+
+    "certifying_body": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ],
+      "description": "The body that issued the verified attestation. Required when attestation_level is 'verified'."
+    },
+
+    "status": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/policySetStatus"
+    },
+
+    "effective_from": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp",
+      "description": "The earliest datetime from which this PolicySet is valid for use in PolicyDecisions."
+    },
+
+    "expires_at": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+        { "type": "null" }
+      ],
+      "description": "If set, PolicyDecisions referencing this PolicySet must be issued before this time."
+    },
+
+    "supersedes": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ],
+      "description": "The policy_set_id of the previous version this PolicySet supersedes. Allows audit tools to reconstruct the policy history for any task."
+    },
+
+    "created_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

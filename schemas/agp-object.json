@@ -1,0 +1,25 @@
+{
+  "$id": "https://agp.dev/schema/agp-object.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AGPObject",
+  "description": "Discriminated union of all AGP durable objects, discriminated by the 'type' field.",
+  "oneOf": [
+    { "$ref": "https://agp.dev/schema/objects/task.json" },
+    { "$ref": "https://agp.dev/schema/objects/liability-binding.json" },
+    { "$ref": "https://agp.dev/schema/objects/capability-token.json" },
+    { "$ref": "https://agp.dev/schema/objects/delegation-chain.json" },
+    { "$ref": "https://agp.dev/schema/objects/skill-manifest.json" },
+    { "$ref": "https://agp.dev/schema/objects/revocation-notice.json" },
+    { "$ref": "https://agp.dev/schema/objects/attested-context.json" },
+    { "$ref": "https://agp.dev/schema/objects/evidence-bundle.json" },
+    { "$ref": "https://agp.dev/schema/objects/commerce-session.json" },
+    { "$ref": "https://agp.dev/schema/objects/decision-record.json" },
+    { "$ref": "https://agp.dev/schema/objects/policy-decision.json" },
+    { "$ref": "https://agp.dev/schema/objects/approval-artifact.json" },
+    { "$ref": "https://agp.dev/schema/objects/action-envelope.json" },
+    { "$ref": "https://agp.dev/schema/objects/execution-receipt.json" },
+    { "$ref": "https://agp.dev/schema/objects/event-ledger-record.json" },
+    { "$ref": "https://agp.dev/schema/objects/impact-assessment.json" },
+    { "$ref": "https://agp.dev/schema/objects/escalation-notice.json" }
+  ]
+}

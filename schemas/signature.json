@@ -1,0 +1,38 @@
+{
+  "$id": "https://agp.dev/schema/common/signature.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Signature",
+  "description": "Structured cryptographic signature binding object type, stable identifier, canonical payload hash, issuer identity, and issuance timestamp. Required fields per AGP Implementation Profile §5.2.",
+  "type": "object",
+  "required": ["alg", "issuer", "issued_at", "payload_hash", "value"],
+  "properties": {
+    "alg": {
+      "type": "string",
+      "description": "Signing algorithm identifier",
+      "examples": ["ES256", "RS256", "EdDSA"]
+    },
+    "kid": {
+      "type": "string",
+      "description": "Key identifier for the signing key",
+      "minLength": 1
+    },
+    "issuer": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "Identity of the issuer who signed this object"
+    },
+    "issued_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp",
+      "description": "Timestamp at which this signature was created"
+    },
+    "payload_hash": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash",
+      "description": "Hash of the canonical JSON serialization of the signed payload (alg:base64url)"
+    },
+    "value": {
+      "type": "string",
+      "description": "Base64url-encoded signature bytes",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

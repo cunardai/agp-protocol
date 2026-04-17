@@ -1,0 +1,30 @@
+{
+  "$id": "https://agp.dev/schema/objects/revocation-notice.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RevocationNotice",
+  "description": "Declares revocation of a durable AGP artifact. MUST be signed by a revocation_issuer per §5.1. Takes effect at effective_at per §11.1.",
+  "type": "object",
+  "required": ["type", "revocation_id", "issuer", "target_type", "target_id", "reason", "effective_at"],
+  "properties": {
+    "type": { "const": "RevocationNotice" },
+    "revocation_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "issuer": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "Identity of the revocation_issuer"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": ["CapabilityToken", "DelegationChain", "SkillManifest", "CommerceSession"]
+    },
+    "target_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "reason": { "type": "string", "minLength": 1 },
+    "effective_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

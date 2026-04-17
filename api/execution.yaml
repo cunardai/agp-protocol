@@ -1,0 +1,644 @@
+openapi: 3.1.0
+info:
+  title: AGP Execution API
+  version: 0.5.0-draft
+  summary: Constrained execution and forensic recording for AGP
+  description: |
+    Execution API for constrained side effects and forensic records:
+    action envelopes, execution receipts, ledger events, replay.
+
+    Fail-closed on missing prerequisites (§10). All consequential actions require:
+    valid CapabilityToken, PolicyDecision, and ApprovalArtifact when required.
+    Durable receipts and ledger events are required for all executed actions (§19).
+
+servers:
+  - url: https://execution.example.com
+
+security:
+  - oauth2ClientCredentials: [agp.execution.read, agp.execution.write]
+  - mutualTLS: []
+
+tags:
+  - name: Execution
+  - name: Receipts
+  - name: Ledger
+  - name: Replay
+  - name: Operations
+
+paths:
+  /agp/action-envelopes:
+    post:
+      tags: [Execution]
+      summary: Submit action envelope
+      description: |
+        Submits an action envelope for validation and optional execution.
+        Execution mode is controlled by the Prefer header.
+        Fails closed on any missing or invalid prerequisite per §10.
+      operationId: createActionEnvelope
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: Prefer
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [validate-only, execute-sync, execute-async]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionEnvelope'
+      responses:
+        '201':
+          description: Envelope accepted and executed synchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '202':
+          description: Envelope accepted for asynchronous execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /agp/action-envelopes/{actionId}:
+    get:
+      tags: [Execution]
+      summary: Get action envelope
+      operationId: getActionEnvelope
+      parameters:
+        - $ref: '#/components/parameters/ActionId'
+      responses:
+        '200':
+          description: Action envelope retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/execution-receipts:
+    post:
+      tags: [Receipts]
+      summary: Record execution receipt
+      operationId: createExecutionReceipt
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionReceipt'
+      responses:
+        '201':
+          description: Execution receipt recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionReceipt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/execution-receipts/{receiptId}:
+    get:
+      tags: [Receipts]
+      summary: Get execution receipt
+      operationId: getExecutionReceipt
+      parameters:
+        - $ref: '#/components/parameters/ReceiptId'
+      responses:
+        '200':
+          description: Execution receipt retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionReceipt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/ledger-events:
+    post:
+      tags: [Ledger]
+      summary: Append ledger event
+      description: Append-only. Events are hash-chained per task stream via prev_event_hash (§14.1).
+      operationId: appendLedgerEvent
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLedgerRecord'
+      responses:
+        '201':
+          description: Ledger event appended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLedgerRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    get:
+      tags: [Ledger]
+      summary: Query ledger events
+      operationId: queryLedgerEvents
+      parameters:
+        - name: task_id
+          in: query
+          schema: { type: string }
+        - name: action_id
+          in: query
+          schema: { type: string }
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/LedgerOutcome'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ledger query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerEventList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agp/tasks/{taskId}/replay:
+    get:
+      tags: [Replay]
+      summary: Replay task event history
+      description: |
+        Returns all ledger events for the task in deterministic order (§14.2).
+        replay_complete signals that the replay stream has ended.
+      operationId: replayTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskReplay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/tasks/{taskId}/replay/stream:
+    get:
+      tags: [Replay]
+      summary: Stream task replay as server-sent events
+      description: Each event is emitted as an SSE data frame. The final frame carries a replay_complete signal.
+      operationId: streamTaskReplay
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: SSE replay stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agp/operations/{operationId}:
+    get:
+      tags: [Operations]
+      summary: Get async operation status
+      operationId: getOperation
+      parameters:
+        - $ref: '#/components/parameters/OperationId'
+      responses:
+        '200':
+          description: Operation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            agp.execution.write: Write execution artifacts
+            agp.execution.read: Read execution artifacts
+    mutualTLS:
+      type: mutualTLS
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    ActionId:
+      name: actionId
+      in: path
+      required: true
+      schema: { type: string }
+    ReceiptId:
+      name: receiptId
+      in: path
+      required: true
+      schema: { type: string }
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema: { type: string }
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed or invalid request (400)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication (401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but not permitted for this operation (403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found (404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Execution rejected due to policy, revocation, or state conflict (409)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Semantically invalid but well-formed — e.g. prerequisite validation failure (422)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    ErrorCode:
+      type: string
+      description: Standard AGP error codes (§13)
+      enum:
+        - AGP_INVALID_REQUEST
+        - AGP_INVALID_SIGNATURE
+        - AGP_UNAUTHORIZED
+        - AGP_FORBIDDEN
+        - AGP_NOT_FOUND
+        - AGP_IDEMPOTENCY_CONFLICT
+        - AGP_SCOPE_VIOLATION
+        - AGP_TOKEN_EXPIRED
+        - AGP_TOKEN_REVOKED
+        - AGP_DELEGATION_REVOKED
+        - AGP_POLICY_DENIED
+        - AGP_APPROVAL_REQUIRED
+        - AGP_APPROVAL_EXPIRED
+        - AGP_TAINT_BLOCKED
+        - AGP_EVIDENCE_INSUFFICIENT
+        - AGP_COMMERCE_SESSION_INVALID
+        - AGP_PAYMENT_REFERENCE_REQUIRED
+        - AGP_LEDGER_UNAVAILABLE
+        - AGP_OPERATION_FAILED
+        - AGP_OPERATION_CANCELLED
+
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message: { type: string, minLength: 1 }
+        retryable: { type: boolean }
+        details: { type: object }
+      additionalProperties: false
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      additionalProperties: false
+
+    Signature:
+      type: object
+      required: [alg, issuer, issued_at, payload_hash, value]
+      description: Structured cryptographic signature per §5.2
+      properties:
+        alg: { type: string }
+        kid: { type: string, minLength: 1 }
+        issuer: { $ref: '#/components/schemas/Id' }
+        issued_at: { $ref: '#/components/schemas/Timestamp' }
+        payload_hash: { $ref: '#/components/schemas/Hash' }
+        value: { type: string, minLength: 1 }
+      additionalProperties: false
+
+    OperationStatus:
+      type: string
+      enum: [pending, running, awaiting_human, succeeded, failed, cancelled]
+
+    AsyncOperation:
+      type: object
+      required: [operation_id, status, created_at, status_url]
+      properties:
+        operation_id: { type: string }
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status_url:
+          type: string
+          format: uri
+        result_url:
+          type: string
+          format: uri
+        callback_url:
+          type: string
+          format: uri
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      additionalProperties: false
+
+    Id:
+      type: string
+      minLength: 1
+      maxLength: 256
+
+    Timestamp:
+      type: string
+      format: date-time
+
+    Hash:
+      type: string
+      pattern: '^[A-Za-z0-9_-]+:.+$'
+
+    PageInfo:
+      type: object
+      properties:
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+      additionalProperties: false
+
+    ExecutionOutcome:
+      type: string
+      enum: [accepted, rejected, executed, partially_executed, failed]
+
+    LedgerOutcome:
+      type: string
+      enum:
+        - initiated
+        - allowed
+        - denied
+        - executed
+        - failed
+        - revoked
+        - quarantined
+        - approval_granted
+        - approval_denied
+        - taint_blocked
+
+    GovernanceAttestation:
+      type: object
+      required: [agent_id, agent_role, verdict, attested_at]
+      description: A governance agent's verdict on an ActionEnvelope. All roles declared in task.governance_requirements must provide a cleared verdict before execution proceeds. See §21.
+      properties:
+        agent_id:
+          $ref: '#/components/schemas/Id'
+        agent_role:
+          type: string
+          enum: [executive, compliance_monitor, impact_assessor]
+        verdict:
+          type: string
+          enum: [cleared, flagged, conditional]
+          description: "cleared: proceed. flagged: block, triggers APPROVAL_PENDING or QUARANTINED. conditional: proceed only if stated conditions are met."
+        conditions:
+          type: array
+          items: { type: string }
+          description: Required when verdict is conditional
+        notes:
+          type: string
+        attested_at:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    ActionEnvelope:
+      type: object
+      required: [type, action_id, task_id, agent_id, tool_id, operation, capability_token_ref, decision_ref, policy_decision_ref, created_at]
+      properties:
+        type: { const: ActionEnvelope }
+        action_id:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        agent_id:
+          $ref: '#/components/schemas/Id'
+        tool_id:
+          $ref: '#/components/schemas/Id'
+        operation:
+          type: string
+        parameters_hash:
+          type: ['string', 'null']
+        allowed_parameter_ranges:
+          type: object
+        capability_token_ref:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          $ref: '#/components/schemas/Id'
+        policy_decision_ref:
+          $ref: '#/components/schemas/Id'
+        approval_ref:
+          type: ['string', 'null']
+        commerce_session_ref:
+          type: ['string', 'null']
+        payment_ref:
+          type: ['string', 'null']
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        governance_attestations:
+          type: array
+          description: Governance agent attestations for this action. All roles declared in task.governance_requirements must be present with cleared verdict before execution proceeds. See §21.
+          items:
+            $ref: '#/components/schemas/GovernanceAttestation'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    ExecutionReceipt:
+      type: object
+      required: [type, receipt_id, action_ref, task_id, executed_at, executor_id, outcome]
+      properties:
+        type: { const: ExecutionReceipt }
+        receipt_id:
+          $ref: '#/components/schemas/Id'
+        action_ref:
+          $ref: '#/components/schemas/Id'
+        task_id:
+          $ref: '#/components/schemas/Id'
+        executed_at:
+          $ref: '#/components/schemas/Timestamp'
+        executor_id:
+          $ref: '#/components/schemas/Id'
+        outcome:
+          $ref: '#/components/schemas/ExecutionOutcome'
+        result_hash:
+          type: ['string', 'null']
+        external_ref:
+          type: ['string', 'null']
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    EventLedgerRecord:
+      type: object
+      required: [type, event_id, task_id, timestamp, agent_id, principal_id, outcome]
+      properties:
+        type: { const: EventLedgerRecord }
+        event_id:
+          $ref: '#/components/schemas/Id'
+        prev_event_hash:
+          type: ['string', 'null']
+        task_id:
+          $ref: '#/components/schemas/Id'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        agent_id:
+          $ref: '#/components/schemas/Id'
+        principal_id:
+          $ref: '#/components/schemas/Id'
+        decision_ref:
+          type: ['string', 'null']
+        delegation_ref:
+          type: ['string', 'null']
+        evidence_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        tool_action_ref:
+          type: ['string', 'null']
+        artifact_hashes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hash'
+        outcome:
+          $ref: '#/components/schemas/LedgerOutcome'
+        signature:
+          oneOf:
+            - $ref: '#/components/schemas/Signature'
+            - type: 'null'
+      additionalProperties: false
+
+    LedgerEventList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLedgerRecord'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      additionalProperties: false
+
+    TaskReplay:
+      type: object
+      required: [task_id, events, replay_complete]
+      description: |
+        Full ordered replay of a task's ledger events (§14.2).
+        replay_complete is true when all historical events have been included
+        and no further events exist at the time of the query.
+      properties:
+        task_id:
+          $ref: '#/components/schemas/Id'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventLedgerRecord'
+        replay_complete:
+          type: boolean
+          description: True when the replay stream has reached the terminal event
+      additionalProperties: false

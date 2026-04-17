@@ -1,0 +1,52 @@
+{
+  "$id": "https://agp.dev/schema/objects/attested-context.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AttestedContext",
+  "type": "object",
+  "required": [
+    "type",
+    "context_id",
+    "task_id",
+    "source_id",
+    "source_type",
+    "trust_class",
+    "instruction_eligible",
+    "taint_labels",
+    "retrieved_at",
+    "hash"
+  ],
+  "properties": {
+    "type": { "const": "AttestedContext" },
+    "context_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "source_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "trusted_policy",
+        "user_input",
+        "tool_result",
+        "agent_message",
+        "retrieved_content",
+        "merchant_response",
+        "payment_response",
+        "evidence_only"
+      ]
+    },
+    "trust_class": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/trustClass" },
+    "instruction_eligible": { "type": "boolean" },
+    "taint_labels": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "retrieved_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "hash": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

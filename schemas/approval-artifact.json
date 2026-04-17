@@ -1,0 +1,44 @@
+{
+  "$id": "https://agp.dev/schema/objects/approval-artifact.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalArtifact",
+  "type": "object",
+  "required": [
+    "type",
+    "approval_id",
+    "task_id",
+    "decision_ref",
+    "approved_by",
+    "approval_mode",
+    "approved_scope",
+    "expires_at"
+  ],
+  "properties": {
+    "type": { "const": "ApprovalArtifact" },
+    "approval_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "decision_ref": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "approved_by": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" }
+    },
+    "approval_mode": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/approvalMode" },
+    "approved_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reason": {
+      "type": "string"
+    },
+    "expires_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

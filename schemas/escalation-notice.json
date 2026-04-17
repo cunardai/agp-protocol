@@ -1,0 +1,69 @@
+{
+  "$id": "https://agp.dev/schema/objects/escalation-notice.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EscalationNotice",
+  "description": "Agent-initiated ethical concern escalation. Any authorized agent may raise an EscalationNotice without being the party executing the action (the Whistleblower mechanism). The requested_action determines the mandatory task state transition: quarantine -> QUARANTINED, pause_and_review -> APPROVAL_PENDING, escalate_to_human -> APPROVAL_PENDING with mandatory human approver. See AGP Profile §23.",
+  "type": "object",
+  "required": [
+    "type",
+    "escalation_id",
+    "task_id",
+    "raising_agent_id",
+    "concern_type",
+    "description",
+    "requested_action",
+    "raised_at"
+  ],
+  "properties": {
+    "type": { "const": "EscalationNotice" },
+    "escalation_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "task_id": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+    "raising_agent_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "Identity of the agent raising the concern. Does not have to be the executing agent."
+    },
+    "raising_agent_role": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/agentRole",
+      "description": "Governance role of the raising agent. compliance_monitor escalations carry higher automatic weight."
+    },
+    "concern_type": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/escalationConcernType" },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language description of the concern"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+      "description": "References to EvidenceBundles, AttestedContexts, or other artifacts supporting the concern"
+    },
+    "requested_action": {
+      "type": "string",
+      "enum": ["quarantine", "pause_and_review", "escalate_to_human"],
+      "description": "The action the raising agent requests be taken on the task. quarantine is the strongest — it stops execution immediately and flags for integrity review."
+    },
+    "resolution": {
+      "type": "object",
+      "description": "Populated by the resolving authority after the escalation is reviewed",
+      "required": ["resolved_by", "outcome", "resolved_at"],
+      "properties": {
+        "resolved_by": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        "outcome": {
+          "type": "string",
+          "enum": ["upheld", "dismissed", "partially_upheld"]
+        },
+        "notes": { "type": "string" },
+        "resolved_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "raised_at": { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp" },
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

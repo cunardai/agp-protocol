@@ -1,0 +1,305 @@
+{
+  "$id": "https://agp.dev/schema/common/defs.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AGP Shared Definitions",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+:.+$"
+    },
+    "currencyAmount": {
+      "type": "object",
+      "required": ["currency", "amount"],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "riskTier": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "trustClass": {
+      "type": "string",
+      "enum": [
+        "trusted_policy",
+        "user_intent",
+        "tool_result",
+        "agent_message",
+        "retrieved_content",
+        "evidence_only",
+        "untrusted_content"
+      ]
+    },
+    "verificationStatus": {
+      "type": "string",
+      "enum": ["unverified", "corroborated", "verified", "disputed"]
+    },
+    "policyResult": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "deny",
+        "require_approval",
+        "require_stronger_auth",
+        "quarantine"
+      ]
+    },
+    "approvalMode": {
+      "type": "string",
+      "enum": ["single", "dual", "multi"]
+    },
+    "memoryClass": {
+      "type": "string",
+      "enum": ["working", "evidence", "profile", "privileged"]
+    },
+    "skillClass": {
+      "type": "string",
+      "enum": [
+        "protocol_adapter",
+        "domain_workflow",
+        "policy_helper",
+        "retrieval_helper",
+        "execution_helper"
+      ]
+    },
+    "attestationLevel": {
+      "type": "string",
+      "enum": ["unverified", "self_attested", "verified"]
+    },
+    "taskStatus": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "BOUND",
+        "DELEGATED",
+        "SKILL_BOUND",
+        "COMMERCE_INIT",
+        "ANALYZING",
+        "DECIDED",
+        "POLICY_CHECKED",
+        "APPROVAL_PENDING",
+        "EXECUTING",
+        "COMPLETED",
+        "DENIED",
+        "REVOKED",
+        "QUARANTINED",
+        "FAILED"
+      ]
+    },
+    "executionOutcome": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "executed", "partially_executed", "failed"]
+    },
+    "ledgerOutcome": {
+      "type": "string",
+      "description": "Outcome class recorded in a ledger event",
+      "enum": [
+        "initiated",
+        "allowed",
+        "denied",
+        "executed",
+        "failed",
+        "revoked",
+        "quarantined",
+        "approval_granted",
+        "approval_denied",
+        "taint_blocked"
+      ]
+    },
+    "errorCode": {
+      "type": "string",
+      "description": "Standard AGP error codes per §13",
+      "enum": [
+        "AGP_INVALID_REQUEST",
+        "AGP_INVALID_SIGNATURE",
+        "AGP_UNAUTHORIZED",
+        "AGP_FORBIDDEN",
+        "AGP_NOT_FOUND",
+        "AGP_IDEMPOTENCY_CONFLICT",
+        "AGP_SCOPE_VIOLATION",
+        "AGP_TOKEN_EXPIRED",
+        "AGP_TOKEN_REVOKED",
+        "AGP_DELEGATION_REVOKED",
+        "AGP_POLICY_DENIED",
+        "AGP_APPROVAL_REQUIRED",
+        "AGP_APPROVAL_EXPIRED",
+        "AGP_TAINT_BLOCKED",
+        "AGP_EVIDENCE_INSUFFICIENT",
+        "AGP_COMMERCE_SESSION_INVALID",
+        "AGP_PAYMENT_REFERENCE_REQUIRED",
+        "AGP_LEDGER_UNAVAILABLE",
+        "AGP_OPERATION_FAILED",
+        "AGP_OPERATION_CANCELLED"
+      ]
+    },
+    "agentRole": {
+      "type": "string",
+      "description": "Governance role of an agent in the multi-agent governance model (§21). executive handles task completion; compliance_monitor enforces policy in real time; impact_assessor simulates consequences before execution.",
+      "enum": ["executive", "compliance_monitor", "impact_assessor"]
+    },
+    "governanceAttestation": {
+      "type": "object",
+      "required": ["agent_id", "agent_role", "verdict", "attested_at"],
+      "description": "A single agent's governance verdict on an ActionEnvelope. All required roles must attest before execution proceeds.",
+      "properties": {
+        "agent_id": { "$ref": "#/$defs/id" },
+        "agent_role": { "$ref": "#/$defs/agentRole" },
+        "verdict": {
+          "type": "string",
+          "enum": ["cleared", "flagged", "conditional"],
+          "description": "cleared: agent approves execution. flagged: agent blocks execution, triggers APPROVAL_PENDING or QUARANTINED. conditional: execution allowed only if stated conditions are met."
+        },
+        "conditions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Required when verdict is conditional"
+        },
+        "notes": { "type": "string" },
+        "attested_at": { "$ref": "#/$defs/timestamp" },
+        "signature": {
+          "anyOf": [
+            { "$ref": "https://agp.dev/schema/common/signature.json" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "governanceRequirements": {
+      "type": "object",
+      "required": ["required_roles"],
+      "description": "Declares which agent governance roles must attest before execution is permitted for this task.",
+      "properties": {
+        "required_roles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/agentRole" }
+        },
+        "quorum": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum number of distinct required roles that must provide a cleared verdict. Defaults to all declared roles."
+        }
+      },
+      "additionalProperties": false
+    },
+    "escalationConcernType": {
+      "type": "string",
+      "description": "Classification of the concern raised in an EscalationNotice",
+      "enum": [
+        "ethical_violation",
+        "scope_creep",
+        "taint_detected",
+        "policy_conflict",
+        "unresolvable_conflict",
+        "data_integrity_failure"
+      ]
+    },
+    "impactHorizon": {
+      "type": "string",
+      "enum": ["immediate", "short_term", "medium_term", "long_term"]
+    },
+    "impactSeverity": {
+      "type": "string",
+      "enum": ["negligible", "low", "medium", "high", "critical"]
+    },
+    "impactDirection": {
+      "type": "string",
+      "enum": ["positive", "negative", "neutral", "mixed"]
+    },
+    "jurisdiction": {
+      "type": "string",
+      "description": "A regulatory jurisdiction code. Use ISO 3166-1 alpha-2 country codes (e.g. 'GB', 'DE') or well-known supranational zones ('EU', 'EEA', 'APAC'). Used to determine which regulatory frameworks apply to a task.",
+      "examples": ["EU", "GB", "US", "DE", "SG", "EEA"]
+    },
+    "regulatoryFramework": {
+      "type": "string",
+      "description": "A well-known regulatory or governance framework identifier. Used in PolicySet and PolicyDecision to attribute decisions to specific regulations.",
+      "enum": [
+        "EU_AI_ACT_2024",
+        "EU_GDPR",
+        "EU_DSA",
+        "NIST_AI_RMF_1_0",
+        "NIST_CSF_2_0",
+        "UK_AI_SAFETY_FRAMEWORK",
+        "UK_GDPR",
+        "MAS_FEAT",
+        "ISO_42001",
+        "ISO_27001",
+        "SOC2_TYPE2",
+        "HIPAA",
+        "CCPA",
+        "CUSTOM"
+      ]
+    },
+    "policySetStatus": {
+      "type": "string",
+      "enum": ["active", "deprecated", "revoked"],
+      "description": "Lifecycle status of a PolicySet. Only active PolicySets may be referenced in new PolicyDecisions."
+    },
+    "ethicalFramework": {
+      "type": "object",
+      "required": ["primary"],
+      "description": "Declares the ethical framework(s) applied by a skill or policy engine. Part of the audit trail for high/critical risk decisions.",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": [
+            "veil_of_ignorance",
+            "pareto_optimal",
+            "utilitarian",
+            "rights_based",
+            "value_pluralist",
+            "custom"
+          ],
+          "description": "veil_of_ignorance: Rawlsian fairness — would this rule be fair if I did not know my position in the outcome? pareto_optimal: no party made worse off. utilitarian: greatest good for greatest number. rights_based: certain rights cannot be violated regardless of aggregate benefit. value_pluralist: multiple frameworks held in tension. custom: implementation-specific, policy_ref required."
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "veil_of_ignorance",
+              "pareto_optimal",
+              "utilitarian",
+              "rights_based",
+              "value_pluralist",
+              "custom"
+            ]
+          },
+          "description": "Additional frameworks applied as secondary constraints"
+        },
+        "prohibitions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Explicit hard prohibitions declared by this framework (e.g. discriminate_by_protected_class)"
+        },
+        "policy_ref": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ],
+          "description": "Required when primary or secondary includes custom"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

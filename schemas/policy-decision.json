@@ -1,0 +1,92 @@
+{
+  "$id": "https://agp.dev/schema/objects/policy-decision.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyDecision",
+  "description": "The verdict produced by a policy engine for a specific DecisionRecord. Records which PolicySet governed the evaluation, which rules fired, which obligations were imposed, and the jurisdiction in which the evaluation was performed. See §11 and §25.",
+  "type": "object",
+  "required": [
+    "type",
+    "policy_decision_id",
+    "task_id",
+    "decision_ref",
+    "verdict",
+    "matched_rules",
+    "obligations",
+    "evaluated_at"
+  ],
+  "properties": {
+    "type": { "const": "PolicyDecision" },
+
+    "policy_decision_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+    },
+
+    "task_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "The task this PolicyDecision governs. Must match the task_id on the referenced DecisionRecord."
+    },
+
+    "decision_ref": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id",
+      "description": "The DecisionRecord this PolicyDecision evaluated."
+    },
+
+    "policy_set_ref": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id" },
+        { "type": "null" }
+      ],
+      "description": "The PolicySet (registered in the Registry) whose rules produced this verdict. Null when no registered PolicySet was used (e.g. ad-hoc evaluation). For AGP Compliance Certification, a non-null policy_set_ref pointing to an active, verified PolicySet is required."
+    },
+
+    "verdict": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/policyResult",
+      "description": "The binding verdict. allow: proceed. deny: halt, task transitions to DENIED. require_approval: suspend pending human approval. require_stronger_auth: re-authenticate before proceeding. quarantine: halt and flag for review."
+    },
+
+    "jurisdiction": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/jurisdiction" },
+        { "type": "null" }
+      ],
+      "description": "The primary jurisdiction under which this evaluation was performed. When a task declares multiple jurisdictions, issue one PolicyDecision per jurisdiction or combine them in a single evaluation with the strictest applicable rules."
+    },
+
+    "matched_rules": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Identifiers of the rules that matched and contributed to the verdict. For OPA-based rulesets, these are fully-qualified rule paths (e.g. 'eu_ai_act.annex_iii.check_prohibited_practice'). Used by audit tools to trace exactly which rules governed any decision."
+    },
+
+    "obligations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Conditions imposed on execution even when the verdict is allow. e.g. 'log_to_eu_ai_act_database', 'notify_affected_persons', 'retain_audit_log_7_years'. Obligations are informational — enforcement is the responsibility of the executing system."
+    },
+
+    "rationale": {
+      "type": "string",
+      "description": "Human-readable explanation of the verdict for audit and review purposes. Required when verdict is deny, quarantine, or require_approval. Should reference the specific regulatory article or policy clause that triggered the verdict."
+    },
+
+    "evaluated_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+
+    "ethical_framework": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/defs.json#/$defs/ethicalFramework" },
+        { "type": "null" }
+      ],
+      "description": "The ethical framework applied by the policy engine to reach this decision. Required when verdict is deny or quarantine for high/critical risk decisions. Part of the audit trail per §24."
+    },
+
+    "signature": {
+      "anyOf": [
+        { "$ref": "https://agp.dev/schema/common/signature.json" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
