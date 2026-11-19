@@ -1,6 +1,6 @@
 # Agent Governance Protocol (AGP)
 
-**v0.5.1** · [agp-protocol.dev](https://agp-protocol.dev) · [Spec](spec/implementation-profile.md) · Apache-2.0
+**v0.5.1** · [agp-protocol.dev](https://agp-protocol.dev) · [Spec](spec/implementation-profile.md) · [Proposed extensions](spec/studio-extensions.md) · Apache-2.0
 
 [![CI](https://github.com/cunardai/agp/actions/workflows/ci.yml/badge.svg)](https://github.com/cunardai/agp/actions/workflows/ci.yml)
 
@@ -102,7 +102,8 @@ Each domain has its own OpenAPI 3.1 spec and OAuth 2.0 scope set. Execution is t
 ```
 agp-protocol/
 ├── spec/
-│   └── implementation-profile.md    # Full protocol specification
+│   ├── implementation-profile.md    # Full protocol specification
+│   └── studio-extensions.md         # Proposed: principal register (E1), detectors (E2), Production Profile
 ├── api/
 │   ├── registry.yaml                # OpenAPI 3.1 — Registry domain
 │   ├── decision.yaml                # OpenAPI 3.1 — Decision domain

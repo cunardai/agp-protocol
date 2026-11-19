@@ -1,0 +1,137 @@
+{
+  "$id": "https://agp.dev/schema/objects/principal.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Principal",
+  "description": "E1 — someone or something that acts, with a status that stops it at once (spec/studio-extensions.md §3).",
+  "type": "object",
+  "required": [
+    "principal_id",
+    "kind",
+    "status",
+    "org_id"
+  ],
+  "properties": {
+    "principal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+    },
+    "kind": {
+      "enum": [
+        "user",
+        "assistant",
+        "mcp_client",
+        "a2a_agent",
+        "a2a_caller",
+        "api_key",
+        "service",
+        "job",
+        "script"
+      ]
+    },
+    "acting_for": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The principal this one acts for; registered first."
+    },
+    "status": {
+      "enum": [
+        "active",
+        "restricted",
+        "suspended",
+        "revoked"
+      ]
+    },
+    "status_reason": {
+      "type": "string"
+    },
+    "status_since": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+    "status_by": {
+      "type": "string",
+      "description": "Who set it: a principal, or detector:<name>."
+    },
+    "effective_status": {
+      "enum": [
+        "active",
+        "restricted",
+        "suspended",
+        "revoked"
+      ],
+      "description": "The most restrictive along acting_for (read-only)."
+    },
+    "blocked_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pending_reinstatement": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+            },
+            "at": {
+              "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "step_up": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "since": {
+              "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "by": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "org_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

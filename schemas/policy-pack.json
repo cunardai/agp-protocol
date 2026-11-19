@@ -1,0 +1,321 @@
+{
+  "$id": "https://agp.dev/schema/objects/policy-pack.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyPack",
+  "description": "Policy as data — a regulation or a bank's own standard as PolicySets for the rules engine (spec/studio-extensions.md §7).",
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "agp/v1"
+    },
+    "kind": {
+      "const": "PolicyPack"
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "pack_id",
+        "name",
+        "version",
+        "publisher"
+      ],
+      "properties": {
+        "pack_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "citation": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": [
+        "policy_sets"
+      ],
+      "properties": {
+        "policy_sets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "version",
+              "publisher",
+              "regulatory_frameworks",
+              "jurisdictions"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "publisher": {
+                "type": "string"
+              },
+              "regulatory_frameworks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "jurisdictions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "policy_engine": {
+                "type": "string",
+                "default": "rules"
+              },
+              "default_verdict": {
+                "enum": [
+                  "allow",
+                  "deny",
+                  "require_approval",
+                  "require_stronger_auth",
+                  "quarantine"
+                ]
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "verdict"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "allow",
+                        "deny",
+                        "require_approval",
+                        "require_stronger_auth",
+                        "quarantine"
+                      ]
+                    },
+                    "rationale": {
+                      "type": "string"
+                    },
+                    "condition": {
+                      "$ref": "#condition"
+                    },
+                    "when": {
+                      "type": "object",
+                      "description": "v0.9's keyword form."
+                    },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "tools": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "source_refs": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "provision"
+                        ],
+                        "properties": {
+                          "provision": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "effective_from": {
+                      "type": "string"
+                    },
+                    "effective_until": {
+                      "type": "string"
+                    },
+                    "set": {
+                      "type": "object"
+                    },
+                    "require": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "source_refs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "provision"
+                  ],
+                  "properties": {
+                    "provision": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "condition": {
+      "$anchor": "condition",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "field",
+            "op"
+          ],
+          "properties": {
+            "field": {
+              "type": "string"
+            },
+            "op": {
+              "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "lte",
+                "gt",
+                "gte",
+                "in",
+                "not_in",
+                "contains",
+                "contains_any",
+                "starts_with",
+                "regex",
+                "exists"
+              ]
+            },
+            "value": {}
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "$ref": "#condition"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

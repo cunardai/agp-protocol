@@ -1,0 +1,92 @@
+{
+  "$id": "https://agp.dev/schema/objects/anomaly-signal.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnomalySignal",
+  "description": "E2 — a detector's finding; write-once, on the ledger as anomaly.detected (spec/studio-extensions.md §4).",
+  "type": "object",
+  "required": [
+    "type",
+    "signal_id",
+    "detector",
+    "score",
+    "evidence",
+    "summary",
+    "mode",
+    "response",
+    "at"
+  ],
+  "properties": {
+    "type": {
+      "const": "AnomalySignal"
+    },
+    "signal_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+    },
+    "detector": {
+      "enum": [
+        "velocity",
+        "scope_probing",
+        "integrity",
+        "ai_spend",
+        "bulk_read",
+        "destructive",
+        "credentials",
+        "agent_behaviour",
+        "time"
+      ]
+    },
+    "principal_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "score": {
+      "type": "number"
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+      },
+      "description": "The ledger events that set it off."
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "mode": {
+      "enum": [
+        "report",
+        "enforce",
+        "off"
+      ]
+    },
+    "response": {
+      "enum": [
+        "record",
+        "alert",
+        "step_up",
+        "restrict",
+        "suspend",
+        "org_read_only"
+      ]
+    },
+    "at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+    "context": {
+      "type": "object",
+      "description": "What a product may act on — opaque ids only (e.g. {session_id, end_session: true})."
+    }
+  },
+  "additionalProperties": true
+}

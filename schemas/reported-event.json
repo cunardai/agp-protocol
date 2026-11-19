@@ -1,0 +1,90 @@
+{
+  "$id": "https://agp.dev/schema/objects/reported-event.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReportedEvent",
+  "description": "An act a product reports to POST /agp/events; AGP sets actor, org and source: reported (spec/studio-extensions.md §5.1).",
+  "type": "object",
+  "required": [
+    "event_kind",
+    "principal_id",
+    "action_class",
+    "outcome",
+    "client_event_id"
+  ],
+  "properties": {
+    "event_kind": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_\\-]+)+$"
+    },
+    "principal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+    },
+    "acting_for": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+    },
+    "action_class": {
+      "enum": [
+        "read",
+        "write",
+        "delete",
+        "publish",
+        "transact",
+        "admin"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "resource": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "outcome": {
+      "enum": [
+        "initiated",
+        "executed",
+        "failed",
+        "denied",
+        "quarantined",
+        "approval_granted",
+        "approval_denied",
+        "revoked"
+      ]
+    },
+    "client_event_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_.@/\\-]{1,200}$",
+      "description": "Kept per org: a retried batch records each event once."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "session_id": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Opaque (an HMAC of the session), never the session id."
+    },
+    "payload_hash": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/hash"
+    },
+    "observed_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+    "refs": {
+      "type": "object"
+    },
+    "detail": {
+      "type": "object",
+      "description": "Metadata only — never what was read or said (net: an opaque network id; after_document; …)."
+    }
+  },
+  "additionalProperties": true
+}

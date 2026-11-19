@@ -1,0 +1,134 @@
+{
+  "$id": "https://agp.dev/schema/objects/approval-request.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalRequest",
+  "description": "An approval bound to people, an action and its parameters (spec/studio-extensions.md §2.2).",
+  "type": "object",
+  "required": [
+    "type",
+    "request_id",
+    "action",
+    "params_hash",
+    "requested_by",
+    "requested_for",
+    "mode",
+    "required",
+    "status",
+    "decisions",
+    "created_at",
+    "expires_at"
+  ],
+  "properties": {
+    "type": {
+      "const": "ApprovalRequest"
+    },
+    "request_id": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_\\-]+)+$",
+      "maxLength": 100
+    },
+    "params_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "task_id": {
+      "anyOf": [
+        {
+          "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requested_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+    },
+    "requested_for": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+    },
+    "mode": {
+      "type": "string",
+      "pattern": "^(self|single|dual|hub_and_org|multi:([2-9]|10))$"
+    },
+    "required": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "approved",
+        "denied",
+        "expired"
+      ]
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "approver",
+          "decision",
+          "at"
+        ],
+        "properties": {
+          "approver": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "The product's own id, per org (e.g. user:3f2…, mcp:tok_9)."
+          },
+          "decision": {
+            "enum": [
+              "approved",
+              "denied"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "at": {
+            "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+          },
+          "via": {
+            "type": "string"
+          },
+          "hub": {
+            "type": "boolean",
+            "description": "The hub operator's half (hub_and_org)."
+          }
+        }
+      }
+    },
+    "approval_ref": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/id"
+    },
+    "payload": {
+      "type": "object",
+      "description": "≤ 4 KB the product reads back once granted."
+    },
+    "created_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    },
+    "expires_at": {
+      "$ref": "https://agp.dev/schema/common/defs.json#/$defs/timestamp"
+    }
+  },
+  "additionalProperties": true
+}
