@@ -92,6 +92,53 @@ export class AGPConnectionError extends AGPError {
   }
 }
 
+export class AGPUnauthorizedError extends AGPError {
+  constructor(message: string, code = "AGP_UNAUTHORIZED") {
+    super(message, { code, http_status: 401 });
+    this.name = "AGPUnauthorizedError";
+  }
+}
+
+export class AGPForbiddenError extends AGPError {
+  constructor(message: string, code = "AGP_FORBIDDEN") {
+    super(message, { code, http_status: 403 });
+    this.name = "AGPForbiddenError";
+  }
+}
+
+/** A principal (or whom it acts for) is restricted, suspended or revoked — or, when the register is
+ *  required, not registered (AGP_PRINCIPAL_UNKNOWN). */
+export class AGPPrincipalBlockedError extends AGPForbiddenError {
+  constructor(message: string, code = "AGP_PRINCIPAL_BLOCKED") {
+    super(message, code);
+    this.name = "AGPPrincipalBlockedError";
+  }
+}
+
+/** A record that can't be written twice (decisions, approvals, receipts, revocations…). */
+export class AGPImmutableError extends AGPConflictError {
+  constructor(message: string) {
+    super(message, "AGP_IMMUTABLE");
+    this.name = "AGPImmutableError";
+  }
+}
+
+/** The ledger couldn't record the act, so it wasn't carried out (fail closed). Retry. */
+export class AGPLedgerUnavailableError extends AGPError {
+  constructor(message: string) {
+    super(message, { code: "AGP_LEDGER_UNAVAILABLE", http_status: 503, retryable: true });
+    this.name = "AGPLedgerUnavailableError";
+  }
+}
+
+/** The server has no auth configured, so it refuses everything (it fails closed). */
+export class AGPAuthNotConfiguredError extends AGPError {
+  constructor(message: string) {
+    super(message, { code: "AGP_AUTH_NOT_CONFIGURED", http_status: 503 });
+    this.name = "AGPAuthNotConfiguredError";
+  }
+}
+
 // ── Error code → class mapping ───────────────────────────────────────────────
 
 const CODE_MAP: Record<string, (msg: string) => AGPError> = {
@@ -101,10 +148,17 @@ const CODE_MAP: Record<string, (msg: string) => AGPError> = {
   AGP_TOKEN_EXPIRED:      (m) => new AGPTokenExpiredError(m),
   AGP_APPROVAL_REQUIRED:  (m) => new AGPApprovalRequiredError(m),
   AGP_SCOPE_VIOLATION:    (m) => new AGPConflictError(m, "AGP_SCOPE_VIOLATION"),
+  AGP_IMMUTABLE:          (m) => new AGPImmutableError(m),
+  AGP_PRINCIPAL_BLOCKED:  (m) => new AGPPrincipalBlockedError(m),
+  AGP_PRINCIPAL_UNKNOWN:  (m) => new AGPPrincipalBlockedError(m, "AGP_PRINCIPAL_UNKNOWN"),
+  AGP_LEDGER_UNAVAILABLE: (m) => new AGPLedgerUnavailableError(m),
+  AGP_AUTH_NOT_CONFIGURED:(m) => new AGPAuthNotConfiguredError(m),
 };
 
 const STATUS_MAP: Record<number, (msg: string, code: string) => AGPError> = {
   400: (m, c) => new AGPBadRequestError(m, c),
+  401: (m, c) => new AGPUnauthorizedError(m, c),
+  403: (m, c) => new AGPForbiddenError(m, c),
   404: (m)    => new AGPNotFoundError(m),
   409: (m, c) => new AGPConflictError(m, c),
   422: (m, c) => new AGPUnprocessableError(m, c),
@@ -114,9 +168,11 @@ export function raiseForResponse(
   status: number,
   body: Record<string, unknown>,
 ): never {
-  const error = (body["error"] as Record<string, string> | undefined) ?? {};
-  const code    = error["code"]    ?? "AGP_ERROR";
-  const message = error["message"] ?? `HTTP ${status}`;
+  // AGP errors are {error: {code, message}}; OAuth's token endpoint answers {error: "<code>", error_description}.
+  const raw = body["error"];
+  const error = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, string>;
+  const code    = error["code"]    ?? (typeof raw === "string" ? raw : "AGP_ERROR");
+  const message = error["message"] ?? (body["error_description"] as string | undefined) ?? `HTTP ${status}`;
 
   if (code in CODE_MAP) {
     throw CODE_MAP[code]!(message);

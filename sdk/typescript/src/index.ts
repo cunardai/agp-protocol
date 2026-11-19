@@ -12,6 +12,10 @@ export { RegistryClient } from "./registry.js";
 export { DecisionClient } from "./decision.js";
 export { ExecutionClient } from "./execution.js";
 export type { SubmitEnvelopeResult } from "./execution.js";
+export { LedgerClient } from "./ledger.js";
+export { PrincipalsClient } from "./principals.js";
+export { ContentClient, contentRef } from "./content.js";
+export { AdminClient } from "./admin.js";
 
 export {
   AGPError,
@@ -25,6 +29,12 @@ export {
   AGPApprovalRequiredError,
   AGPServerError,
   AGPConnectionError,
+  AGPUnauthorizedError,
+  AGPForbiddenError,
+  AGPPrincipalBlockedError,
+  AGPImmutableError,
+  AGPLedgerUnavailableError,
+  AGPAuthNotConfiguredError,
 } from "./exceptions.js";
 
 export type {
@@ -44,4 +54,8 @@ export type {
   Page, PagedResult,
   // Options
   RequestOptions,
+  // v0.9 studio profile
+  Outcome, ActionClass, ReportedEvent, LedgerVerification, Checkpoint, CheckpointKey,
+  PrincipalKind, PrincipalStatus, EffectiveStatus, Principal,
+  ContentKind, ContentItem, StoredContent, KeptContent, ObjectVersion, OAuthClient,
 } from "./types.js";

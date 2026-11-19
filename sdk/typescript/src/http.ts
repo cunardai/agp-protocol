@@ -77,6 +77,7 @@ export class Transport {
     }
     if (!response.ok) {
       const detail = await response.json().catch(() => ({})) as Record<string, unknown>;
+      if (response.status === 503) raiseForResponse(503, detail);       // auth not configured: say so
       throw new AGPConnectionError(
         `Token request failed (${response.status}): ${detail["error_description"] ?? JSON.stringify(detail)}`,
       );
@@ -115,6 +116,32 @@ export class Transport {
     const headers: Record<string, string> = { ...this.defaultHeaders, ...await this.authHeaders() };
     if (options.idempotency_key) headers["Idempotency-Key"] = options.idempotency_key;
     return this._request<T>("PATCH", path, { headers, body });
+  }
+
+  async put<T>(path: string, body: Record<string, unknown>): Promise<T> {
+    return this._request<T>("PUT", path, { headers: { ...this.defaultHeaders, ...await this.authHeaders() }, body });
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return this._request<T>("DELETE", path, { headers: { ...this.defaultHeaders, ...await this.authHeaders() } });
+  }
+
+  /** A file (the evidence pack): the bytes, and the name the server gave it. */
+  async getFile(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<{ bytes: ArrayBuffer; filename: string | null; headers: Headers }> {
+    const url = `${this.base}${params ? `${path}?${this._buildQuery(params)}` : path}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeout);
+    let response: Response;
+    try {
+      response = await fetch(url, { headers: await this.authHeaders(), signal: controller.signal });
+    } catch (err) {
+      throw new AGPConnectionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!response.ok) raiseForResponse(response.status, await response.json().catch(() => ({})) as Record<string, unknown>);
+    const cd = response.headers.get("content-disposition") ?? "";
+    return { bytes: await response.arrayBuffer(), filename: /filename="([^"]+)"/.exec(cd)?.[1] ?? null, headers: response.headers };
   }
 
   // ── Internal ───────────────────────────────────────────────────────────

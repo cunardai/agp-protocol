@@ -25,7 +25,11 @@
  *   const pe   = await client.decision.evaluatePolicy({ ... });
  */
 
+import { AdminClient } from "./admin.js";
+import { ContentClient } from "./content.js";
 import { DecisionClient } from "./decision.js";
+import { LedgerClient } from "./ledger.js";
+import { PrincipalsClient } from "./principals.js";
 import { ExecutionClient } from "./execution.js";
 import { Transport } from "./http.js";
 import { RegistryClient } from "./registry.js";
@@ -46,6 +50,14 @@ export class AGPClient {
   readonly registry:  RegistryClient;
   readonly decision:  DecisionClient;
   readonly execution: ExecutionClient;
+  /** The ledger: report acts, verify, checkpoints, evidence packs. */
+  readonly ledger:     LedgerClient;
+  /** The principal register (E1): who acts, for whom, and whether they may. */
+  readonly principals: PrincipalsClient;
+  /** Kept prompts and answers, with the org's retention. */
+  readonly content:    ContentClient;
+  /** OAuth clients, provisioning an org's first client, object history. */
+  readonly admin:      AdminClient;
 
   private readonly transport: Transport;
 
@@ -60,6 +72,10 @@ export class AGPClient {
     this.registry  = new RegistryClient(this.transport);
     this.decision  = new DecisionClient(this.transport);
     this.execution = new ExecutionClient(this.transport);
+    this.ledger     = new LedgerClient(this.transport);
+    this.principals = new PrincipalsClient(this.transport);
+    this.content    = new ContentClient(this.transport);
+    this.admin      = new AdminClient(this.transport);
   }
 
   /**

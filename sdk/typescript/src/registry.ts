@@ -241,6 +241,16 @@ export class RegistryClient {
 
   // ── Revocations ───────────────────────────────────────────────────────
 
+  /** A policy set is never edited: a new version is a new PolicySet that supersedes this one. */
+  async newPolicySetVersion(policy_set_id: string, params: Record<string, unknown>): Promise<PolicySet & { supersedes: string; lineage_id: string }> {
+    return this.t.post(`/agp/policy-sets/${encodeURIComponent(policy_set_id)}/versions`, params);
+  }
+
+  /** Every version of a policy set, oldest first. */
+  async policySetVersions(policy_set_id: string): Promise<{ lineage_id: string; items: PolicySet[] }> {
+    return this.t.get(`/agp/policy-sets/${encodeURIComponent(policy_set_id)}/versions`);
+  }
+
   async revoke(params: {
     issuer: string;
     target_type: string;

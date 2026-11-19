@@ -261,3 +261,97 @@ export interface PagedResult<T> {
 export interface RequestOptions {
   idempotency_key?: string;
 }
+
+// ── v0.9 (studio): the ledger, principals, reported events, kept content ─────
+
+export type Outcome = "initiated" | "executed" | "failed" | "denied" | "revoked" | "quarantined" | "approval_granted" | "approval_denied";
+export type ActionClass = "read" | "write" | "publish" | "transact" | "delete" | "admin";
+
+/** An act a product reports (POST /agp/events). AGP sets the actor, org and source itself. */
+export interface ReportedEvent {
+  client_event_id?: string;          // filled in if missing; AGP records each id once per org
+  event_kind: string;                // dotted lower case: "http.request", "tool.call", "ai.call"…
+  principal_id: string;              // who acted
+  acting_for?: string;               // whom an agent acted for
+  action_class: ActionClass;
+  action?: string;
+  resource?: string;
+  verdict?: "allow" | "deny" | "step_up" | "quarantined";
+  outcome: Outcome;
+  refs?: Record<string, unknown>;
+  payload_hash?: string;             // "sha256:<64 hex>"
+  session_id?: string;
+  request_id?: string;
+  observed_at?: string;
+  detail?: Record<string, unknown>;
+}
+
+export interface LedgerVerification {
+  org_id: string;
+  ok: boolean;
+  checked: number;
+  break?: { event_id?: string; why: string };
+  checkpoints: { ok: boolean; checked: number; break?: unknown };
+}
+
+export interface Checkpoint {
+  type: "LedgerCheckpoint";
+  checkpoint_id: string;
+  org_id: string;
+  from_position: number;
+  to_position: number;
+  head_event_id: string;
+  head_hash: string;
+  prev_checkpoint_hash: string | null;
+  sealed_at: string;
+  alg: "Ed25519";
+  public_key: string;
+  key_id: string;
+  signature: string;
+  anchor?: { scheme: string; token?: string; gen_time?: string; error?: string };
+}
+
+export interface CheckpointKey { alg: "Ed25519"; public_key: string; key_id: string; ephemeral: boolean; trusted_key_ids: string[] }
+
+export type PrincipalKind = "user" | "assistant" | "mcp_client" | "a2a_agent" | "a2a_caller" | "api_key" | "service" | "job" | "script";
+export type PrincipalStatus = "active" | "restricted" | "suspended" | "revoked";
+
+export interface EffectiveStatus {
+  principal_id: string;
+  kind: PrincipalKind;
+  status: PrincipalStatus;
+  effective_status: PrincipalStatus;
+  blocked_by: string | null;
+  chain: string[];
+}
+
+export interface Principal {
+  type: "Principal";
+  principal_id: string;
+  kind: PrincipalKind;
+  display: string;
+  acting_for: string | null;
+  risk_tier: string;
+  client_id: string | null;
+  external_ref: string | null;
+  status: PrincipalStatus;
+  status_reason: string;
+  status_since: string;
+  status_by: string;
+  pending_reinstatement?: { by: string; at: string; reason: string } | null;
+  created_at: string;
+  effective?: EffectiveStatus;
+}
+
+export type ContentKind = "prompt" | "answer" | "attachment" | "tool_arguments" | "tool_result";
+export interface ContentItem { kind: ContentKind; data: string | Record<string, unknown> | unknown[]; media_type?: string; sha256?: string; truncated?: boolean; full_sha256?: string }
+export interface StoredContent { content_id: string; sha256: string; expires_at: string }
+export interface KeptContent {
+  content_id: string; kind: ContentKind; media_type: string; sha256: string; size: number;
+  truncated: boolean; full_sha256: string; created_at: string; expires_at: string; org_id: string;
+  data: string | Record<string, unknown> | unknown[];
+}
+
+export interface ObjectVersion { resource_type: string; id: string; org_id: string; version: number; at: string; actor: string; data_hash: string; prev_hash: string | null; data: Record<string, unknown> }
+
+export interface OAuthClient { client_id: string; scopes: string[]; created_at: string; description: string; org_id: string }
