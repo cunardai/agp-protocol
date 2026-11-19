@@ -62,7 +62,12 @@ New errors: `AGPUnauthorizedError` (401), `AGPForbiddenError` (403) and `AGPPrin
 principal, or whom it acts for, is stopped), `AGPImmutableError` (a record written twice),
 `AGPLedgerUnavailableError` (the act wasn't carried out — retry), `AGPAuthNotConfiguredError`.
 
-Tests: `AGP_BASE_URL=… npm test` (an open server) and, for the studio profile, a server with auth on and
+Verdicts come from the server in v0.9: register policy sets with `policy_engine` (`rules` takes your own
+`rules` and `default_verdict`); a verdict passed to `evaluatePolicy` is kept for the record and doesn't
+count.
+
+Tests: `AGP_BASE_URL=… npm test` (an open server, started with `AGP_CALLER_VERDICTS=1` for the v0.5
+session tests, which send their own verdicts) and, for the studio profile, a server with auth on and
 a provisioning client: `AGP_AUTH_BASE_URL=… AGP_PROVISIONER_ID=… AGP_PROVISIONER_SECRET=… npm test`.
 
 ## Links

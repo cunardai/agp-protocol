@@ -95,11 +95,14 @@ describe.skipIf(!live)("studio profile", () => {
     const ps = await c.registry.registerPolicySet({
       name: "Limits", version: "1.0.0", publisher: "sdk", regulatory_frameworks: ["X"], jurisdictions: ["EU"],
       ruleset_hash: "sha256:" + "a".repeat(64), ruleset_engine: "custom", attestation_level: "self_attested",
-    } as never);
+      // Verdicts come from the server: every policy set needs an engine (here, rules of its own).
+      policy_engine: "rules", default_verdict: "allow", rules: [{ id: "big", verdict: "require_approval", when: { risk_tier_in: ["high"] } }],
+    });
     const next = await c.registry.newPolicySetVersion(ps.policy_set_id, {
       name: "Limits", version: "1.1.0", publisher: "sdk", regulatory_frameworks: ["X"], jurisdictions: ["EU"],
       ruleset_hash: "sha256:" + "b".repeat(64), ruleset_engine: "custom", attestation_level: "self_attested",
       effective_from: new Date().toISOString(), created_at: new Date().toISOString(),
+      policy_engine: "rules", default_verdict: "allow", rules: [{ id: "big", verdict: "deny", when: { risk_tier_in: ["high"] } }],
     });
     expect(next.supersedes).toBe(ps.policy_set_id);
     expect((await c.registry.policySetVersions(next.policy_set_id)).items.map(p => p.version)).toEqual(["1.0.0", "1.1.0"]);

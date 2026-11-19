@@ -193,6 +193,12 @@ export class RegistryClient {
     effective_from?: string;
     certifying_body?: string;
     supersedes?: string;
+    /** The engine the server runs to compute verdicts (v0.9: required) — "euai_act", "gdpr_dp", or "rules". */
+    policy_engine?: string;
+    /** For the "rules" engine: the verdict when no rule matches, and the rules (first match wins). */
+    default_verdict?: string;
+    default_rationale?: string;
+    rules?: { id?: string; verdict: string; rationale?: string; when: Record<string, unknown> }[];
   }, opts: RequestOptions = {}): Promise<PolicySet> {
     const body: Record<string, unknown> = {
       name:                  params.name,
@@ -208,6 +214,9 @@ export class RegistryClient {
     };
     if (params.certifying_body) body["certifying_body"] = params.certifying_body;
     if (params.supersedes)      body["supersedes"]      = params.supersedes;
+    for (const k of ["policy_engine", "default_verdict", "default_rationale", "rules"] as const) {
+      if (params[k] !== undefined) body[k] = params[k];
+    }
     return this.t.post<PolicySet>("/agp/policy-sets", body, {
       idempotency_key: opts.idempotency_key ?? newIdempotencyKey(),
     });
