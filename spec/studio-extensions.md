@@ -5,6 +5,7 @@
 **Builds on:** AGP Implementation Profile v0.5-draft (`spec/implementation-profile.md`), AGP v0.9 objects and APIs
 **Reference implementation:** `agp-platform`, branch `agp-v0.9-studio` (server) — every behaviour below is implemented and tested there
 **Conformance:** `conformance/tests/test_production.py` (`--profile production`) and `test_decision.py` in the same repository
+**Relation to the Implementation Profile:** §2 proposes additions to its §19 *Minimum production profile*; §§3–9 are new extensions, each claimable on its own
 **Origin:** running AGP beside the BIAN Agentic Banking Studio, where people, chat assistants, MCP tokens, API keys, published A2A agents and generated BIAN services all act on a bank's data
 
 The key words MUST, MUST NOT, SHOULD and MAY are to be read as in RFC 2119.
@@ -33,14 +34,14 @@ Each section gives the behaviour an implementation MUST have to claim the extens
 
 # 2. Changes to core behaviour
 
-These tighten v0.9's existing semantics rather than add surface. An implementation claiming the **Production Profile** MUST implement all of §2.
+These tighten v0.9's existing semantics rather than add surface. The proposal is that the Implementation Profile's **§19 Minimum production profile** ("AGP Production Profile") also require all of §2 — today's §19 list (signed artifacts, revocation propagation, an approval workflow, fail-closed execution, …) doesn't yet say whose verdict counts, who may approve, or what the ledger must resist.
 
 ## 2.1 Verdicts come from the server
 
 - A PolicyDecision's verdict MUST be computed by the server from an active PolicySet that names an engine the server runs (`policy_engine`). A caller-supplied `verdict` MUST NOT count; it MAY be kept as `caller_verdict` for the record.
 - `POST /agp/decision/policy-evaluations` requires `policy_set_ref` (or `policy_set_refs`, §7.4). A PolicySet without a server-side engine MUST be refused at registration (400) and at evaluation (422 `AGP_POLICY_NO_ENGINE`).
 - The §10 gate MUST refuse a PolicyDecision not marked `server_computed` (422 `AGP_POLICY_DENIED`).
-- Compatibility: an implementation MAY offer a v0.5 mode (`AGP_CALLER_VERDICTS=1` in the reference) in which callers' verdicts count. It MUST NOT be the default, and an implementation running in it MUST NOT claim the Production Profile.
+- Compatibility: an implementation MAY offer a v0.5 mode (`AGP_CALLER_VERDICTS=1` in the reference) in which callers' verdicts count. It MUST NOT be the default, and an implementation running in it MUST NOT claim the AGP Production Profile (§19, as extended here).
 
 ## 2.2 Approvals bound to people
 
@@ -288,7 +289,7 @@ A client MUST NOT be given scopes beyond its creator's own.
 The reference suite has two profiles:
 
 - **v0.5** (`pytest tests/`, server with caller verdicts allowed): the v0.9 protocol — registry, decision (now complete: contexts and taint, evidence, decisions, policy evaluations, impact, escalations), execution, security, v0.9 — 70 tests.
-- **Production** (`pytest tests/test_production.py --profile production`, server computing every verdict): §2 and §§3, 6, 7 — server verdicts, approvals bound to people, the whole chain with `execute-async` and its receipt, a suspended agent refused at validate, the capability check, reported events, packs with cited verdicts — 12 tests.
+- **production** (`pytest tests/test_production.py --profile production`, server computing every verdict) — the §19 Production Profile as extended by §2 here, plus §§3, 6, 7 — server verdicts, approvals bound to people, the whole chain with `execute-async` and its receipt, a suspended agent refused at validate, the capability check, reported events, packs with cited verdicts — 12 tests.
 
 A server whose detectors enforce will suspend the suite's agent for scope probing (its refusals are deliberate): run it with scope probing in report mode.
 
