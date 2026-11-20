@@ -24,7 +24,8 @@ export class LedgerClient {
     return out;
   }
 
-  async events(params: { task_id?: string; outcome?: string; limit?: number; cursor?: string } = {}): Promise<{ items: EventLedgerRecord[] }> {
+  /** Masked as read (AGP 1.0, §8); raw: true needs agp.execution.admin. order: "desc" for the newest first. */
+  async events(params: { task_id?: string; outcome?: string; limit?: number; cursor?: string; order?: "asc" | "desc"; raw?: boolean } = {}): Promise<{ items: EventLedgerRecord[] }> {
     return this.t.get("/agp/ledger-events", params);
   }
 

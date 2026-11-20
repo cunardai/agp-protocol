@@ -62,12 +62,18 @@ export class DecisionClient {
 
   // ── Policy Evaluations ────────────────────────────────────────────────
 
+  /**
+   * The verdict is the server's (AGP 1.0, §2.1): name the PolicySet (policy_set_ref) or several
+   * (policy_set_refs — the most restrictive wins). A `verdict` is kept as caller_verdict and doesn't count,
+   * except on a server that allows callers' verdicts (the v0.5 profile).
+   */
   async evaluatePolicy(params: {
     task_id: string;
     decision_ref: string;
-    verdict: Verdict;
+    verdict?: Verdict;
     rationale?: string;
     policy_set_ref?: string;
+    policy_set_refs?: string[];
     jurisdiction?: string;
     matched_rules?: string[];
     obligations?: string[];
@@ -75,9 +81,10 @@ export class DecisionClient {
     const body: Record<string, unknown> = {
       task_id:      params.task_id,
       decision_ref: params.decision_ref,
-      verdict:      params.verdict,
       evaluated_at: nowIso(),
     };
+    if (params.verdict)         body["verdict"]         = params.verdict;
+    if (params.policy_set_refs) body["policy_set_refs"] = params.policy_set_refs;
     if (params.rationale)       body["rationale"]       = params.rationale;
     if (params.policy_set_ref)  body["policy_set_ref"]  = params.policy_set_ref;
     if (params.jurisdiction)    body["jurisdiction"]    = params.jurisdiction;

@@ -86,6 +86,58 @@ class AGPConnectionError(AGPError):
         super().__init__(message, code="AGP_CONNECTION_ERROR", retryable=True)
 
 
+# ── AGP 1.0 ────────────────────────────────────────────────────────────────────
+
+class AGPUnauthorizedError(AGPError):
+    """401 — no credential, or not a valid one."""
+    def __init__(self, message: str, code: str = "AGP_UNAUTHORIZED"):
+        super().__init__(message, code=code, http_status=401)
+
+
+class AGPForbiddenError(AGPError):
+    """403 — the credential lacks a scope, or the rule refuses it (nobody approves their own action, …)."""
+    def __init__(self, message: str, code: str = "AGP_FORBIDDEN"):
+        super().__init__(message, code=code, http_status=403)
+
+
+class AGPPrincipalBlockedError(AGPForbiddenError):
+    """403 — the principal (or whom it acts for) is restricted, suspended or revoked (the principal register, E1)."""
+    def __init__(self, message: str, code: str = "AGP_PRINCIPAL_BLOCKED"):
+        super().__init__(message, code=code)
+
+
+class AGPImmutableError(AGPConflictError):
+    """409 — a write-once record can't be changed."""
+
+
+class AGPTaintDetectedError(AGPUnprocessableError):
+    """422 — a tainted attested context blocks the gate until its trust is promoted."""
+
+
+class AGPOrgReadOnlyError(AGPError):
+    """423 — the org is read-only (an integrity failure) until people reinstate it."""
+    def __init__(self, message: str):
+        super().__init__(message, code="AGP_ORG_READ_ONLY", http_status=423)
+
+
+class AGPRateLimitedError(AGPError):
+    """429 — too many requests; retry after the server's Retry-After."""
+    def __init__(self, message: str):
+        super().__init__(message, code="AGP_RATE_LIMITED", http_status=429, retryable=True)
+
+
+class AGPLedgerUnavailableError(AGPError):
+    """503 — the ledger couldn't record it, so it wasn't done (write before act)."""
+    def __init__(self, message: str):
+        super().__init__(message, code="AGP_LEDGER_UNAVAILABLE", http_status=503, retryable=True)
+
+
+class AGPAuthNotConfiguredError(AGPError):
+    """503 — the server has no auth secret and refuses everything (it fails closed)."""
+    def __init__(self, message: str):
+        super().__init__(message, code="AGP_AUTH_NOT_CONFIGURED", http_status=503)
+
+
 # ── Error code → exception mapping ────────────────────────────────────────────
 
 _CODE_MAP: dict[str, type[AGPError]] = {
@@ -95,21 +147,35 @@ _CODE_MAP: dict[str, type[AGPError]] = {
     "AGP_TOKEN_EXPIRED":    AGPTokenExpiredError,
     "AGP_APPROVAL_REQUIRED": AGPApprovalRequiredError,
     "AGP_SCOPE_VIOLATION":  AGPConflictError,
+    "AGP_PRINCIPAL_BLOCKED": AGPPrincipalBlockedError,
+    "AGP_PRINCIPAL_UNKNOWN": AGPPrincipalBlockedError,
+    "AGP_IMMUTABLE":        AGPImmutableError,
+    "AGP_TAINT_DETECTED":   AGPTaintDetectedError,
+    "AGP_ORG_READ_ONLY":    AGPOrgReadOnlyError,
+    "AGP_RATE_LIMITED":     AGPRateLimitedError,
+    "AGP_LEDGER_UNAVAILABLE": AGPLedgerUnavailableError,
+    "AGP_AUTH_NOT_CONFIGURED": AGPAuthNotConfiguredError,
 }
 
 _STATUS_MAP: dict[int, type[AGPError]] = {
     400: AGPBadRequestError,
     404: AGPNotFoundError,
     409: AGPConflictError,
+    401: AGPUnauthorizedError,
+    403: AGPForbiddenError,
     422: AGPUnprocessableError,
+    423: AGPOrgReadOnlyError,
+    429: AGPRateLimitedError,
 }
 
 
 def raise_for_response(status: int, body: dict) -> None:
     """Parse an AGP error body and raise the appropriate exception."""
-    error = body.get("error", {})
-    code = error.get("code", "AGP_ERROR")
-    message = error.get("message", f"HTTP {status}")
+    raw = body.get("error", {}) if isinstance(body, dict) else {}
+    # AGP errors are {error: {code, message}}; OAuth's token endpoint answers {error: "<code>", error_description}.
+    error = raw if isinstance(raw, dict) else {}
+    code = error.get("code") or (raw if isinstance(raw, str) else "AGP_ERROR")
+    message = error.get("message") or (body.get("error_description") if isinstance(body, dict) else None) or f"HTTP {status}"
 
     # Specific code takes priority
     if code in _CODE_MAP:

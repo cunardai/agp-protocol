@@ -1,7 +1,7 @@
-# AGP v0.9 — Proposed Extensions from a Production Deployment
+# AGP 1.0 (proposed) — v0.9 with the Extensions from a Production Deployment
 ## The principal register (E1), detectors (E2), and the changes a bank deployment needed
 
-**Status:** Proposal to the AGP working group — not yet part of AGP
+**Status:** Proposal to the AGP working group — not yet part of AGP. Our implementation of it is called **AGP 1.0**: the reference server (`agp-platform`, `agp-v0.9-studio`) and the SDKs (`@agp-protocol/sdk` and `agp-sdk` 1.0.0, branch `sdk-v0.9-studio`) — none of it published. (Not the `stable` line's v1.0.0 server, which dropped v0.9's task protocol.)
 **Builds on:** AGP Implementation Profile v0.5-draft (`spec/implementation-profile.md`), AGP v0.9 objects and APIs
 **Reference implementation:** `agp-platform`, branch `agp-v0.9-studio` (server) — every behaviour below is implemented and tested there
 **Conformance:** `conformance/tests/test_production.py` (`--profile production`) and `test_decision.py` in the same repository

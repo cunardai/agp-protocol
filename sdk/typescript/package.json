@@ -1,6 +1,6 @@
 {
   "name": "@agp-protocol/sdk",
-  "version": "0.9.0-studio.1",
+  "version": "1.0.0",
   "description": "TypeScript/Node.js SDK for the Agent Governance Protocol",
   "homepage": "https://agp-protocol.dev",
   "repository": {

@@ -89,15 +89,18 @@ export class Transport {
 
   // ── Core verbs ─────────────────────────────────────────────────────────
 
+  /** The server's base URL (no trailing slash). */
+  get baseUrl(): string { return this.base; }
+
   async post<T>(
     path: string,
     body: Record<string, unknown>,
-    options: { idempotency_key?: string; prefer?: string } = {},
+    options: { idempotency_key?: string; prefer?: string; allow_status?: number[] } = {},
   ): Promise<T> {
     const headers: Record<string, string> = { ...this.defaultHeaders, ...await this.authHeaders() };
     if (options.idempotency_key) headers["Idempotency-Key"] = options.idempotency_key;
     if (options.prefer)          headers["Prefer"]          = options.prefer;
-    return this._request<T>("POST", path, { headers, body });
+    return this._request<T>("POST", path, { headers, body, ...(options.allow_status ? { allow_status: options.allow_status } : {}) });
   }
 
   async get<T>(
@@ -149,7 +152,7 @@ export class Transport {
   private async _request<T>(
     method: string,
     path: string,
-    opts: { headers: Record<string, string>; body?: Record<string, unknown> },
+    opts: { headers: Record<string, string>; body?: Record<string, unknown>; allow_status?: number[] },
   ): Promise<T> {
     const url = `${this.base}${path}`;
     const controller = new AbortController();
@@ -176,7 +179,8 @@ export class Transport {
 
     const json = await response.json().catch(() => ({})) as Record<string, unknown>;
 
-    if (!response.ok) {
+    // A status the caller reads itself (a DENY from the capability check is an answer, not an error).
+    if (!response.ok && !opts.allow_status?.includes(response.status)) {
       raiseForResponse(response.status, json);
     }
 

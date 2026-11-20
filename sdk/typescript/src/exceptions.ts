@@ -139,6 +139,30 @@ export class AGPAuthNotConfiguredError extends AGPError {
   }
 }
 
+/** 423 — the org is read-only (an integrity failure): writes refused until people reinstate it. */
+export class AGPOrgReadOnlyError extends AGPError {
+  constructor(message: string) {
+    super(message, { code: "AGP_ORG_READ_ONLY", http_status: 423 });
+    this.name = "AGPOrgReadOnlyError";
+  }
+}
+
+/** 429 — too many requests; retry after the server's Retry-After. */
+export class AGPRateLimitedError extends AGPError {
+  constructor(message: string) {
+    super(message, { code: "AGP_RATE_LIMITED", http_status: 429, retryable: true });
+    this.name = "AGPRateLimitedError";
+  }
+}
+
+/** 422 — a tainted attested context blocks the gate until its trust is promoted (§8.4). */
+export class AGPTaintDetectedError extends AGPUnprocessableError {
+  constructor(message: string) {
+    super(message, "AGP_TAINT_DETECTED");
+    this.name = "AGPTaintDetectedError";
+  }
+}
+
 // ── Error code → class mapping ───────────────────────────────────────────────
 
 const CODE_MAP: Record<string, (msg: string) => AGPError> = {
@@ -153,6 +177,9 @@ const CODE_MAP: Record<string, (msg: string) => AGPError> = {
   AGP_PRINCIPAL_UNKNOWN:  (m) => new AGPPrincipalBlockedError(m, "AGP_PRINCIPAL_UNKNOWN"),
   AGP_LEDGER_UNAVAILABLE: (m) => new AGPLedgerUnavailableError(m),
   AGP_AUTH_NOT_CONFIGURED:(m) => new AGPAuthNotConfiguredError(m),
+  AGP_ORG_READ_ONLY:      (m) => new AGPOrgReadOnlyError(m),
+  AGP_RATE_LIMITED:       (m) => new AGPRateLimitedError(m),
+  AGP_TAINT_DETECTED:     (m) => new AGPTaintDetectedError(m),
 };
 
 const STATUS_MAP: Record<number, (msg: string, code: string) => AGPError> = {
@@ -162,6 +189,8 @@ const STATUS_MAP: Record<number, (msg: string, code: string) => AGPError> = {
   404: (m)    => new AGPNotFoundError(m),
   409: (m, c) => new AGPConflictError(m, c),
   422: (m, c) => new AGPUnprocessableError(m, c),
+  423: (m)    => new AGPOrgReadOnlyError(m),
+  429: (m)    => new AGPRateLimitedError(m),
 };
 
 export function raiseForResponse(

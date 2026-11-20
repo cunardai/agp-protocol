@@ -16,6 +16,10 @@ export { LedgerClient } from "./ledger.js";
 export { PrincipalsClient } from "./principals.js";
 export { ContentClient, contentRef } from "./content.js";
 export { AdminClient } from "./admin.js";
+export { ApprovalsClient } from "./approvals.js";
+export { DetectorsClient } from "./detectors.js";
+export { PacksClient } from "./packs.js";
+export { OperatorClient } from "./operator.js";
 
 export {
   AGPError,
@@ -35,6 +39,9 @@ export {
   AGPImmutableError,
   AGPLedgerUnavailableError,
   AGPAuthNotConfiguredError,
+  AGPOrgReadOnlyError,
+  AGPRateLimitedError,
+  AGPTaintDetectedError,
 } from "./exceptions.js";
 
 export type {
@@ -58,4 +65,8 @@ export type {
   Outcome, ActionClass, ReportedEvent, LedgerVerification, Checkpoint, CheckpointKey,
   PrincipalKind, PrincipalStatus, EffectiveStatus, Principal,
   ContentKind, ContentItem, StoredContent, KeptContent, ObjectVersion, OAuthClient,
+  // AGP 1.0
+  ApprovalMode, ApprovalDecisionEntry, ApprovalRequest, BoundApproval,
+  DetectorName, DetectorMode, DetectorResponse, DetectorSetting, AnomalySignal, OrgStatus, BlockedSet,
+  SourceRef, PolicyPackSummary, PackInstall, PolicyPackManifest, CapabilityCheck, ReadOnlyOrg,
 } from "./types.js";

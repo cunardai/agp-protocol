@@ -38,8 +38,14 @@ class RegistryClient:
         governance_requirements: dict[str, Any] | None = None,
         jurisdictions: list[str] | None = None,
         regulatory_frameworks: list[str] | None = None,
+        tool: str | None = None,
+        intent: str | None = None,
+        arguments: dict[str, Any] | None = None,
+        signals: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> Task:
+        """tool / intent / arguments / signals: what a policy's conditions read (AGP 1.0, Policy Packs) —
+        e.g. signals={"bian": {"service_domains": ["Consumer Loan"]}}."""
         body: dict[str, Any] = {
             "principal_id": principal_id,
             "requested_outcome": requested_outcome,
@@ -56,6 +62,9 @@ class RegistryClient:
             body["jurisdictions"] = jurisdictions
         if regulatory_frameworks:
             body["regulatory_frameworks"] = regulatory_frameworks
+        for k, v in (("tool", tool), ("intent", intent), ("arguments", arguments), ("signals", signals)):
+            if v is not None:
+                body[k] = v
 
         raw = self._t.post("/agp/tasks", body,
                            idempotency_key=idempotency_key or new_idempotency_key())
@@ -130,6 +139,7 @@ class RegistryClient:
         expires_in_days: int = 30,
         expires_at: str | None = None,
         revocation_id: str | None = None,
+        task_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> CapabilityToken:
         exp = expires_at or (
@@ -144,10 +154,34 @@ class RegistryClient:
             "constraints": constraints or {},
             "expires_at": exp,
             "revocation_id": rev_id,
+            **({"task_id": task_id} if task_id else {}),
         }
         raw = self._t.post("/agp/capabilities", body,
                            idempotency_key=idempotency_key or new_idempotency_key())
         return CapabilityToken.model_validate(raw)
+
+    def check_capability(
+        self,
+        capability_id: str,
+        *,
+        agent_id: str,
+        tool_id: str,
+        acting_for: str | None = None,
+        policy_set_refs: list[str] | str | None = None,
+        signals: dict[str, Any] | None = None,
+        arguments: dict[str, Any] | None = None,
+        risk_tier: str | None = None,
+    ) -> dict[str, Any]:
+        """May this agent use this tool under this capability, now? — for tool calls outside a task (AGP 1.0, §6).
+        policy_set_refs ("installed" = every pack installed in the org) judges the call by Policy Packs too;
+        acting_for names the principal behind it (checked too). A DENY is returned, not raised: read
+        ["enforcement_decision"], ["failed_check"], ["reason"] and, from a pack, ["source_refs"]."""
+        body: dict[str, Any] = {"agent_id": agent_id, "tool_id": tool_id}
+        for k, v in (("acting_for", acting_for), ("policy_set_refs", policy_set_refs), ("signals", signals),
+                     ("arguments", arguments), ("risk_tier", risk_tier)):
+            if v is not None:
+                body[k] = v
+        return self._t.post(f"/agp/capabilities/{capability_id}/check", body, allow_status=(403,))
 
     def get_capability(self, capability_id: str) -> CapabilityToken:
         return CapabilityToken.model_validate(

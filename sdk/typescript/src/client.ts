@@ -26,6 +26,10 @@
  */
 
 import { AdminClient } from "./admin.js";
+import { ApprovalsClient } from "./approvals.js";
+import { DetectorsClient } from "./detectors.js";
+import { OperatorClient } from "./operator.js";
+import { PacksClient } from "./packs.js";
 import { ContentClient } from "./content.js";
 import { DecisionClient } from "./decision.js";
 import { LedgerClient } from "./ledger.js";
@@ -58,6 +62,14 @@ export class AGPClient {
   readonly content:    ContentClient;
   /** OAuth clients, provisioning an org's first client, object history. */
   readonly admin:      AdminClient;
+  /** Approvals bound to people: ask, decide, redeem once; the org's two-person list. */
+  readonly approvals:  ApprovalsClient;
+  /** Detectors (E2), the org's status, step-up, who's stopped now. */
+  readonly detectors:  DetectorsClient;
+  /** Policy Packs: publish, install, uninstall; verdicts cite their provisions. */
+  readonly packs:      PacksClient;
+  /** The hub operator (scope agp.operator): read-only orgs, the hub's half of reinstating one. */
+  readonly operator:   OperatorClient;
 
   private readonly transport: Transport;
 
@@ -76,6 +88,10 @@ export class AGPClient {
     this.principals = new PrincipalsClient(this.transport);
     this.content    = new ContentClient(this.transport);
     this.admin      = new AdminClient(this.transport);
+    this.approvals  = new ApprovalsClient(this.transport);
+    this.detectors  = new DetectorsClient(this.transport);
+    this.packs      = new PacksClient(this.transport);
+    this.operator   = new OperatorClient(this.transport);
   }
 
   /**

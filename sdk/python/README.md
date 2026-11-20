@@ -189,6 +189,39 @@ except AGPTokenRevokedError:
     print("Capability token has been revoked")
 ```
 
+## AGP 1.0
+
+1.0.0 adds AGP v0.9's studio profile and the extensions proposed in `spec/studio-extensions.md` (they return dicts):
+
+| Client | What |
+|---|---|
+| `client.ledger` | `report` a product's acts (once per `client_event_id`), `events` (masked; `raw=True` needs `agp.execution.admin`), `verify`, checkpoints, `evidence_pack` (a zip an auditor checks offline) |
+| `client.principals` | The principal register (E1): `register`, `get`, `list`, `history`, `set_status` |
+| `client.content` | Kept prompts and answers, with the org's retention |
+| `client.admin` | OAuth clients, `provision_org_client`, object `versions` |
+| `client.approvals` | Bound to people: `request`, `decide`, `redeem` (once), the two-person list |
+| `client.detectors` | Detectors (E2), the org's status, step-up, `blocked`, `status_stream_url()` |
+| `client.packs` | Policy Packs: `list`, `manifest`, `publish`, `install`, `uninstall` |
+| `client.operator` | The hub operator: `read_only_orgs`, `decide` |
+| `registry.check_capability` | An agent's capability outside a task — tools, the installed packs (`policy_set_refs="installed"`), the person behind it (`acting_for`); a DENY is returned, not raised |
+
+Also: `evaluate_policy(policy_set_ref=… | policy_set_refs=[…])` (the server's verdict, citing `source_refs`),
+`create_task(tool=, intent=, arguments=, signals=)`, `submit_envelope(async_mode=True, params_hash=…)` then
+`execution.record_receipt(...)`, `issue_capability(task_id=…)`. New errors: `AGPUnauthorizedError`, `AGPForbiddenError`,
+`AGPPrincipalBlockedError`, `AGPImmutableError`, `AGPTaintDetectedError`, `AGPOrgReadOnlyError`, `AGPRateLimitedError`,
+`AGPLedgerUnavailableError`, `AGPAuthNotConfiguredError`.
+
+```python
+agp = AGPClient(url, client_id="…", client_secret="…")
+check = agp.registry.check_capability(cap_id, agent_id="service:loans", tool_id="update_loan", acting_for="user:ann",
+                                      policy_set_refs="installed", signals={"bian": {"service_domains": ["Consumer Loan"]}})
+if check["enforcement_decision"] == "DENY":
+    raise RuntimeError(check["reason"])          # e.g. "… (Art. 9(1))"
+```
+
+Tests: `pytest tests/ --base-url …` (an open v0.5-profile server) and, for AGP 1.0, a server with auth on:
+`AGP_AUTH_BASE_URL=… AGP_PROVISIONER_ID=… AGP_PROVISIONER_SECRET=… [AGP_OPERATOR_ID=… AGP_OPERATOR_SECRET=…] pytest tests/`.
+
 ## Links
 
 - [Protocol spec](https://agp.dev)

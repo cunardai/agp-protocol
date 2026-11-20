@@ -25,7 +25,10 @@ export class ExecutionClient {
     policy_decision_ref: string;
     approval_ref?: string;
     governance_attestations?: GovernanceAttestation[];
+    /** execute-async: the product carries the action out — it validates, acts, and its receipt finishes the task. */
     async_mode?: boolean;
+    /** The action's parameters' hash: an approval for other parameters is refused (§2.2). */
+    params_hash?: string;
   }, opts: RequestOptions = {}): Promise<SubmitEnvelopeResult> {
     const body: Record<string, unknown> = {
       task_id:              params.task_id,
@@ -39,6 +42,7 @@ export class ExecutionClient {
     };
     if (params.approval_ref)             body["approval_ref"]             = params.approval_ref;
     if (params.governance_attestations)  body["governance_attestations"]  = params.governance_attestations;
+    if (params.params_hash)              body["params_hash"]              = params.params_hash;
 
     const prefer = params.async_mode ? "execute-async" : undefined;
     return this.t.post<SubmitEnvelopeResult>("/agp/action-envelopes", body, {
@@ -79,6 +83,12 @@ export class ExecutionClient {
   }
 
   // ── Receipts ──────────────────────────────────────────────────────────
+
+  /** The product's receipt for an action it carried out (execute-async): it finishes the task (§2.6). */
+  async recordReceipt(params: { action_ref: string; task_id: string; executor_id: string; outcome: "success" | "failed"; executed_at?: string;
+                                [extra: string]: unknown }): Promise<ExecutionReceipt> {
+    return this.t.post<ExecutionReceipt>("/agp/execution-receipts", { executed_at: nowIso(), ...params }, { idempotency_key: newIdempotencyKey() });
+  }
 
   async getReceipt(receipt_id: string): Promise<ExecutionReceipt> {
     return this.t.get<ExecutionReceipt>(`/agp/execution-receipts/${receipt_id}`);

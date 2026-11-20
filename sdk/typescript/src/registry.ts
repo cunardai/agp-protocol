@@ -4,7 +4,7 @@
 
 import { futureIso, newIdempotencyKey, nowIso, Transport } from "./http.js";
 import type {
-  AttestationLevel, CapabilityToken, DelegationChain, GovernanceRequirements,
+  AttestationLevel, CapabilityCheck, CapabilityToken, DelegationChain, GovernanceRequirements,
   LiabilityBinding, PagedResult, PolicySet, RequestOptions,
   RevocationNotice, RiskTier, RulesetEngine, SkillManifest, Task,
 } from "./types.js";
@@ -23,6 +23,12 @@ export class RegistryClient {
     governance_requirements?: GovernanceRequirements;
     jurisdictions?: string[];
     regulatory_frameworks?: string[];
+    /** What a policy's conditions read (AGP 1.0, Policy Packs): the tool or intent, its arguments, and
+     *  namespaced signals (e.g. { bian: { service_domains: [...] } }). */
+    tool?: string;
+    intent?: string;
+    arguments?: Record<string, unknown>;
+    signals?: Record<string, unknown>;
   }, opts: RequestOptions = {}): Promise<Task> {
     const body: Record<string, unknown> = {
       principal_id:      params.principal_id,
@@ -35,6 +41,7 @@ export class RegistryClient {
     if (params.governance_requirements) body["governance_requirements"] = params.governance_requirements;
     if (params.jurisdictions?.length)   body["jurisdictions"]           = params.jurisdictions;
     if (params.regulatory_frameworks?.length) body["regulatory_frameworks"] = params.regulatory_frameworks;
+    for (const k of ["tool", "intent", "arguments", "signals"] as const) if (params[k] !== undefined) body[k] = params[k];
 
     return this.t.post<Task>("/agp/tasks", body, {
       idempotency_key: opts.idempotency_key ?? newIdempotencyKey(),
@@ -99,8 +106,11 @@ export class RegistryClient {
     expires_at?: string;
     expires_in_days?: number;
     revocation_id?: string;
+    /** Bind it to one task (the §10 gate then refuses it for any other). */
+    task_id?: string;
   }, opts: RequestOptions = {}): Promise<CapabilityToken> {
     return this.t.post<CapabilityToken>("/agp/capabilities", {
+      ...(params.task_id ? { task_id: params.task_id } : {}),
       subject_agent:     params.subject_agent,
       issuer:            params.issuer,
       principal_id:      params.principal_id,
@@ -109,6 +119,19 @@ export class RegistryClient {
       expires_at:        params.expires_at ?? futureIso(params.expires_in_days ?? 30),
       revocation_id:     params.revocation_id ?? newIdempotencyKey(),
     }, { idempotency_key: opts.idempotency_key ?? newIdempotencyKey() });
+  }
+
+  /**
+   * May this agent use this tool under this capability, now? — for tool calls outside a task (AGP 1.0, §6).
+   * Optionally judged by Policy Packs too: policy_set_refs ("installed" = every pack installed in the org) on
+   * the call's signals and arguments; acting_for names the principal behind the call (checked too). A DENY
+   * answers 403 — returned here, not thrown, so the caller can show the failed check and its provision.
+   */
+  async checkCapability(capability_id: string, params: {
+    agent_id: string; tool_id: string; acting_for?: string; policy_set_refs?: string[] | "installed";
+    signals?: Record<string, unknown>; arguments?: Record<string, unknown>; risk_tier?: string;
+  }): Promise<CapabilityCheck> {
+    return this.t.post<CapabilityCheck>(`/agp/capabilities/${encodeURIComponent(capability_id)}/check`, params, { allow_status: [403] });
   }
 
   async getCapability(capability_id: string): Promise<CapabilityToken> {
@@ -198,7 +221,11 @@ export class RegistryClient {
     /** For the "rules" engine: the verdict when no rule matches, and the rules (first match wins). */
     default_verdict?: string;
     default_rationale?: string;
-    rules?: { id?: string; verdict: string; rationale?: string; when: Record<string, unknown> }[];
+    /** A rule: a condition tree (all / any / not over {field, op, value}) or v0.9's `when`; source_refs cite the
+     *  provisions it implements; effective_from / _until bound when it applies (AGP 1.0, Policy Packs). */
+    rules?: { id?: string; verdict: string; rationale?: string; when?: Record<string, unknown>; condition?: Record<string, unknown>;
+              scope?: { tools?: string[] }; source_refs?: { provision: string; [k: string]: string }[];
+              effective_from?: string; effective_until?: string; set?: Record<string, unknown>; require?: string[] }[];
   }, opts: RequestOptions = {}): Promise<PolicySet> {
     const body: Record<string, unknown> = {
       name:                  params.name,

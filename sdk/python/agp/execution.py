@@ -39,6 +39,7 @@ class ExecutionClient:
         approval_ref: str | None = None,
         governance_attestations: list[GovernanceAttestation] | None = None,
         async_mode: bool = False,
+        params_hash: str | None = None,
         idempotency_key: str | None = None,
     ) -> ActionEnvelope | AsyncOperation:
         """
@@ -64,6 +65,8 @@ class ExecutionClient:
         }
         if approval_ref:
             body["approval_ref"] = approval_ref
+        if params_hash:
+            body["params_hash"] = params_hash
         if governance_attestations:
             body["governance_attestations"] = [
                 a.model_dump() for a in governance_attestations
@@ -118,6 +121,13 @@ class ExecutionClient:
         )
 
     # ── Execution Receipts ─────────────────────────────────────────────────
+
+    def record_receipt(self, *, action_ref: str, task_id: str, executor_id: str, outcome: str,
+                       executed_at: str | None = None, **extra: Any) -> dict[str, Any]:
+        """The product's receipt for an action it carried out (execute-async): it finishes the task (AGP 1.0, §2.6)."""
+        return self._t.post("/agp/execution-receipts", {"action_ref": action_ref, "task_id": task_id, "executor_id": executor_id,
+                                                        "outcome": outcome, "executed_at": executed_at or _now(), **extra},
+                            idempotency_key=new_idempotency_key())
 
     def get_receipt(self, receipt_id: str) -> ExecutionReceipt:
         return ExecutionReceipt.model_validate(

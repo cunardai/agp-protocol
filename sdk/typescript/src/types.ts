@@ -355,3 +355,50 @@ export interface KeptContent {
 export interface ObjectVersion { resource_type: string; id: string; org_id: string; version: number; at: string; actor: string; data_hash: string; prev_hash: string | null; data: Record<string, unknown> }
 
 export interface OAuthClient { client_id: string; scopes: string[]; created_at: string; description: string; org_id: string }
+
+// ── AGP 1.0: approvals bound to people, detectors, packs, the capability check, the operator ───────────────
+
+export type ApprovalMode = "self" | "single" | "dual" | "hub_and_org" | `multi:${number}`;
+export interface ApprovalDecisionEntry { approver: string; decision: "approved" | "denied"; reason?: string; at: string; via?: string; hub?: boolean }
+export interface ApprovalRequest {
+  type: "ApprovalRequest"; request_id: string; action: string; params_hash: string; task_id?: string | null;
+  requested_by: string; requested_for: string; mode: ApprovalMode; required: number; summary: string;
+  status: "pending" | "approved" | "denied" | "expired"; decisions: ApprovalDecisionEntry[];
+  approval_ref?: string; payload?: Record<string, unknown>; created_at: string; expires_at: string;
+}
+export interface BoundApproval {
+  type: "ApprovalArtifact"; approval_id: string; request_id: string; task_id?: string | null; action: string; params_hash: string;
+  decision: "approved"; approver_id: string; approver_ids: string[]; requested_by: string; requested_for: string;
+  mode: ApprovalMode; approved_at: string; valid_until: string;
+}
+
+export type DetectorName = "velocity" | "scope_probing" | "integrity" | "ai_spend" | "bulk_read" | "destructive" | "credentials" | "agent_behaviour" | "time";
+export type DetectorMode = "report" | "enforce" | "off";
+export type DetectorResponse = "record" | "alert" | "step_up" | "restrict" | "suspend" | "org_read_only";
+export interface DetectorSetting { mode: DetectorMode; response: DetectorResponse; [threshold: string]: unknown }
+export interface AnomalySignal {
+  type: "AnomalySignal"; signal_id: string; detector: DetectorName; principal_id: string | null; score: number;
+  evidence: string[]; summary: string; mode: DetectorMode; response: DetectorResponse; at: string;
+  context?: Record<string, unknown>;
+}
+export interface OrgStatus { org_id: string; status: "active" | "read_only"; reason: string | null; reinstated_by: "dual" | "hub_and_org" }
+export interface BlockedSet { org_status: string; items: { principal_id: string; effective_status?: string; reason?: string; by?: string; step_up?: boolean }[] }
+
+export interface SourceRef { provision: string; instrument?: string; [k: string]: string | undefined }
+export interface PolicyPackSummary {
+  pack_id: string; name: string; version: string; publisher: string; description: string; citation: Record<string, string>;
+  channel: "official" | "org"; policy_sets: number; rules: number; versions?: string[];
+  installed: { version: string; policy_set_ids: string[]; installed_at: string; installed_by: string } | null;
+}
+export interface PackInstall { install_id: string; pack_id: string; version: string; channel: string; manifest_hash: string; policy_set_ids: string[];
+  installed_at: string; installed_by: string; replaced?: string | null; uninstalled?: boolean; uninstalled_at?: string }
+/** A PolicyPack manifest (schemas/policy-pack.json). */
+export interface PolicyPackManifest { apiVersion: "agp/v1"; kind: "PolicyPack"; metadata: Record<string, unknown>; spec: Record<string, unknown> }
+
+export interface CapabilityCheck {
+  valid: boolean; enforcement_decision: "PERMIT" | "DENY"; capability_id?: string; expires_at?: string;
+  failed_check?: string; reason?: string; matched_rule?: string | number; source_refs?: SourceRef[]; pack_id?: string;
+  policy?: { verdict: Verdict; matched_rule?: string | number; source_refs?: SourceRef[]; pack_id?: string };
+  checks: { check: string; passed: boolean; detail?: string }[]; validated_at: string;
+}
+export interface ReadOnlyOrg { org_id: string; reason: string | null; requests: ApprovalRequest[] }

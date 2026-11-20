@@ -100,6 +100,7 @@ class Transport:
         idempotency_key: str | None = None,
         prefer: str | None = None,
         expected_status: int = 201,
+        allow_status: tuple[int, ...] = (),
     ) -> dict[str, Any]:
         headers: dict[str, str] = {**self._auth_headers()}
         if idempotency_key:
@@ -110,8 +111,40 @@ class Transport:
             r = self._client.post(path, json=body, headers=headers)
         except httpx.ConnectError as e:
             raise AGPConnectionError(str(e)) from e
+        if r.status_code not in allow_status:       # a status the caller reads itself (a capability DENY)
+            self._raise_if_error(r)
+        return r.json()
+
+    def put(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
+        try:
+            r = self._client.put(path, json=body, headers=self._auth_headers())
+        except httpx.ConnectError as e:
+            raise AGPConnectionError(str(e)) from e
         self._raise_if_error(r)
         return r.json()
+
+    def delete(self, path: str) -> dict[str, Any]:
+        try:
+            r = self._client.delete(path, headers=self._auth_headers())
+        except httpx.ConnectError as e:
+            raise AGPConnectionError(str(e)) from e
+        self._raise_if_error(r)
+        return r.json() if r.content else {}
+
+    def get_file(self, path: str, *, params: dict[str, Any] | None = None) -> tuple[bytes, str | None]:
+        """A download (an evidence pack): its bytes and the filename the server gave it."""
+        try:
+            r = self._client.get(path, params=params, headers=self._auth_headers())
+        except httpx.ConnectError as e:
+            raise AGPConnectionError(str(e)) from e
+        self._raise_if_error(r)
+        import re
+        m = re.search(r'filename="([^"]+)"', r.headers.get("content-disposition", ""))
+        return r.content, (m.group(1) if m else None)
+
+    @property
+    def base_url(self) -> str:
+        return self._base
 
     def get(
         self,

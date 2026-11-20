@@ -97,20 +97,26 @@ class DecisionClient:
         *,
         task_id: str,
         decision_ref: str,
-        verdict: Verdict,
+        verdict: Verdict | None = None,
         rationale: str | None = None,
         policy_set_ref: str | None = None,
+        policy_set_refs: list[str] | None = None,
         jurisdiction: str | None = None,
         matched_rules: list[str] | None = None,
         obligations: list[str] | None = None,
         idempotency_key: str | None = None,
     ) -> PolicyDecision:
+        # The verdict is the server's (AGP 1.0, §2.1): name the PolicySet, or several (the most restrictive wins).
+        # A verdict sent is kept as caller_verdict and doesn't count — except on a v0.5-profile server.
         body: dict[str, Any] = {
             "task_id": task_id,
             "decision_ref": decision_ref,
-            "verdict": verdict,
             "evaluated_at": _now(),
         }
+        if verdict:
+            body["verdict"] = verdict
+        if policy_set_refs:
+            body["policy_set_refs"] = policy_set_refs
         if rationale:
             body["rationale"] = rationale
         if policy_set_ref:

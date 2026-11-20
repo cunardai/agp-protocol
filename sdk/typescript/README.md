@@ -66,9 +66,34 @@ Verdicts come from the server in v0.9: register policy sets with `policy_engine`
 `rules` and `default_verdict`); a verdict passed to `evaluatePolicy` is kept for the record and doesn't
 count.
 
+### AGP 1.0
+
+1.0.0 adds the rest of the proposal (`spec/studio-extensions.md`):
+
+| Client | What |
+|---|---|
+| `client.approvals` | Approvals bound to people: `request`, `decide` (nobody approves their own; dual takes two others), `redeem` (once, for exactly that action, those parameters, that person), the org's two-person list |
+| `client.detectors` | Detectors (E2): `settings`, `proposeSettings` (a two-person action), `signals`; the org's status and `askToReinstateOrg`; `clearStepUp`; `blocked`; `statusStreamUrl()` |
+| `client.packs` | Policy Packs: `list`, `manifest`, `publish`, `install`, `uninstall` |
+| `client.operator` | The hub operator (scope `agp.operator`): `readOnlyOrgs`, `decide` (the hub's half of reinstating an org) |
+| `registry.checkCapability` | An agent's capability checked outside a task — tools, the installed packs on this call (`policy_set_refs: "installed"`), and the person behind it (`acting_for`). A DENY is returned, not thrown |
+
+Also: `evaluatePolicy({ policy_set_ref | policy_set_refs })` — the server's verdict, the most restrictive of several,
+citing `source_refs`; `createTask({ tool, intent, arguments, signals })` for packs' conditions;
+`submitEnvelope({ async_mode: true, params_hash })` then `execution.recordReceipt(...)`, which finishes the task;
+`ledger.events({ order, raw })` (masked; raw needs `agp.execution.admin`); `issueCapability({ task_id })`.
+New errors: `AGPOrgReadOnlyError` (423), `AGPRateLimitedError` (429), `AGPTaintDetectedError`.
+
+```ts
+const check = await agp.registry.checkCapability(capId, { agent_id: "service:loans", tool_id: "update_loan",
+  acting_for: "user:ann", policy_set_refs: "installed", signals: { bian: { service_domains: ["Consumer Loan"] } } });
+if (check.enforcement_decision === "DENY") throw new Error(`${check.reason}`);   // e.g. "… (Art. 9(1))"
+```
+
 Tests: `AGP_BASE_URL=… npm test` (an open server, started with `AGP_CALLER_VERDICTS=1` for the v0.5
-session tests, which send their own verdicts) and, for the studio profile, a server with auth on and
-a provisioning client: `AGP_AUTH_BASE_URL=… AGP_PROVISIONER_ID=… AGP_PROVISIONER_SECRET=… npm test`.
+session tests, which send their own verdicts) and, for the studio profile and AGP 1.0, a server with auth on,
+a provisioning client and, optionally, an operator: `AGP_AUTH_BASE_URL=… AGP_PROVISIONER_ID=… AGP_PROVISIONER_SECRET=…
+AGP_OPERATOR_ID=… AGP_OPERATOR_SECRET=… npm test`.
 
 ## Links
 

@@ -31,7 +31,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from .admin import AdminClient
+from .approvals import ApprovalsClient
+from .content import ContentClient
 from .decision import DecisionClient
+from .detectors import DetectorsClient
+from .ledger import LedgerClient
+from .operator import OperatorClient
+from .packs import PacksClient
+from .principals import PrincipalsClient
 from .execution import ExecutionClient
 from .http import Transport
 from .models import RiskTier, Task
@@ -69,6 +77,15 @@ class AGPClient:
         self.registry  = RegistryClient(self._transport)
         self.decision  = DecisionClient(self._transport)
         self.execution = ExecutionClient(self._transport)
+        # AGP 1.0
+        self.ledger     = LedgerClient(self._transport)       # report, read (masked), verify, checkpoints, evidence
+        self.principals = PrincipalsClient(self._transport)   # the principal register (E1)
+        self.content    = ContentClient(self._transport)      # kept prompts and answers
+        self.admin      = AdminClient(self._transport)        # OAuth clients, provisioning, object history
+        self.approvals  = ApprovalsClient(self._transport)    # bound to people; redeem once; two-person list
+        self.detectors  = DetectorsClient(self._transport)    # detectors (E2), org status, step-up
+        self.packs      = PacksClient(self._transport)        # Policy Packs
+        self.operator   = OperatorClient(self._transport)     # the hub operator (agp.operator)
 
     def close(self) -> None:
         self._transport.close()
