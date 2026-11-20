@@ -183,9 +183,9 @@ Prompts and answers are kept in full, apart from the ledger, with their own rete
 
 `/agp/validate` needs an ActionEnvelope, so it covers actions inside a task. An agent's tool calls — a chat assistant, an MCP token, a generated service's operations — mostly happen outside one. Each such agent holds a CapabilityToken naming the tools it may use, and asks before every changing call:
 
-`POST /agp/capabilities/{id}/check {agent_id, tool_id, policy_set_refs?, signals?, arguments?, risk_tier?}` (`agp.execution.write`)
+`POST /agp/capabilities/{id}/check {agent_id, tool_id, acting_for?, policy_set_refs?, signals?, arguments?, risk_tier?}` (`agp.execution.write`)
 
-Checks in order: `capability_exists` · `agent_identity` · `capability_not_expired` · `capability_not_revoked` (its own or its delegation chain's) · `tool_permitted` (`*` permits all) · `principal_status` (the agent and whom it acts for) · `policy`, if asked — the given PolicySets, or `"installed"` (every pack installed in the org, §7), judge this call from its `signals` and `arguments`: `deny` / `quarantine` refused citing the provision, `require_approval` refused as `approval_required` (an automated caller has nobody to ask).
+Checks in order: `capability_exists` · `agent_identity` · `capability_not_expired` · `capability_not_revoked` (its own or its delegation chain's) · `tool_permitted` (`*` permits all) · `principal_status` (the agent, whom its capability acts for, and `acting_for` — the principal behind this call, e.g. the person a service is serving: suspended there, refused here, whatever agent carries it) · `policy`, if asked — the given PolicySets, or `"installed"` (every pack installed in the org, §7), judge this call from its `signals` and `arguments`: `deny` / `quarantine` refused citing the provision, `require_approval` refused as `approval_required` (an automated caller has nobody to ask).
 
 200 `PERMIT`, or 403 `DENY` with `failed_check` and `reason`. A DENY MUST be on the ledger (`enforcement.denied`); a PERMIT need not be (the caller's own `tool.call` names the capability). The arguments are judged, not kept.
 
@@ -233,6 +233,7 @@ A rule: `id`, `verdict`, `rationale`, `condition` — a tree of `all` / `any` / 
 - **official** — shipped with the implementation, read-only, visible to every org.
 - **org** — published by an org (`POST /agp/packs {manifest}`), that org's only. A published version MUST NOT change; publish a new version.
 - Installing (`POST /agp/packs/install {pack_id, version?}`) makes the pack's PolicySets in the installing org, with new ids, tagged with the pack. A new version deprecates the sets of the version it replaces. Installing the same version again changes nothing.
+- Uninstalling (`POST /agp/packs/uninstall {pack_id}`) stops it applying: its PolicySets are deprecated, not deleted — they remain the record of what applied when.
 
 ## 7.3 Verdicts cite their provisions
 
